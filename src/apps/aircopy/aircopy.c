@@ -20,19 +20,19 @@
 //  #include "ARMCM0.h"
 //#endif
 
-#include "features/aircopy.h"
+#include "apps/aircopy/aircopy.h"
 #include "audio.h"
 #include "drivers/bsp/bk4819.h"
 #include "drivers/bsp/crc.h"
 #include "drivers/bsp/eeprom.h"
 #include "frequencies.h"
-#include "misc.h"
+#include "core/misc.h"
 #include "radio.h"
 #include "ui/helper.h"
 #include "ui/inputbox.h"
 #include "ui/ui.h"
 
-#ifdef ENABLE_FEAT_F4HWN_SCREENSHOT
+#ifdef ENABLE_SERIAL_SCREENCAST
 #include "screenshot.h"
 #endif
 
@@ -51,7 +51,7 @@ static void AIRCOPY_clear()
     {
         crc[i] = 0;
     }
-    #ifdef ENABLE_FEAT_F4HWN_SCREENSHOT
+    #ifdef ENABLE_SERIAL_SCREENCAST
         getScreenShot(true);
     #endif
 }
@@ -80,7 +80,7 @@ bool AIRCOPY_SendMessage(void)
 
     if (++gAirCopyBlockNumber >= 0x78) {
         gAircopyState = AIRCOPY_COMPLETE;
-        #ifdef ENABLE_FEAT_F4HWN_SCREENSHOT
+        #ifdef ENABLE_SERIAL_SCREENCAST
             getScreenShot(false);
         #endif
         //NVIC_SystemReset();
@@ -141,7 +141,7 @@ void AIRCOPY_StorePacket(void)
 
     if (Offset == 0x1E00) {
         gAircopyState = AIRCOPY_COMPLETE;
-        #ifdef ENABLE_FEAT_F4HWN_SCREENSHOT
+        #ifdef ENABLE_SERIAL_SCREENCAST
             getScreenShot(false);
         #endif
     }

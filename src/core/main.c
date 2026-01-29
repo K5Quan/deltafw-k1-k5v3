@@ -24,20 +24,20 @@
 
 #include "audio.h"
 #include "board.h"
-#include "misc.h"
+#include "core/misc.h"
 #include "radio.h"
-#include "settings.h"
-#include "version.h"
+#include "apps/settings/settings.h"
+#include "core/version.h"
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     #ifdef ENABLE_FMRADIO
         #include "features/action.h"
         #include "ui/ui.h"
     #endif
     #ifdef ENABLE_SPECTRUM
-        #include "features/spectrum.h"
+        #include "apps/spectrum/spectrum.h"
     #endif
-    #include "features/chFrScanner.h"
+    #include "apps/scanner/chFrScanner.h"
 #endif
 
 #include "features/app.h"
@@ -55,11 +55,11 @@
 #ifdef ENABLE_USB
 #include "drivers/bsp/vcp.h"
 #endif
-#include "helper/battery.h"
-#include "helper/boot.h"
+#include "apps/battery/battery.h"
+#include "apps/boot/boot.h"
 
 #include "ui/lock.h"
-#include "ui/welcome.h"
+#include "apps/boot/welcome.h"
 #include "ui/menu.h"
 
 #include "external/printf/printf.h"
@@ -99,7 +99,7 @@ void Main(void)
 
     SETTINGS_InitEEPROM();
 
-    #ifdef ENABLE_FEAT_F4HWN
+    #ifdef ENABLE_CUSTOM_FIRMWARE_MODS
         gDW = gEeprom.DUAL_WATCH;
         gCB = gEeprom.CROSS_BAND_RX_TX;
     #endif
@@ -125,7 +125,7 @@ void Main(void)
 
     BOOT_Mode_t  BootMode = BOOT_GetMode();
 
-#ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
+#ifdef ENABLE_RESCUE_OPERATIONS
     if (BootMode == BOOT_MODE_RESCUE_OPS)
     {
         gEeprom.MENU_LOCK = !gEeprom.MENU_LOCK;
@@ -143,7 +143,7 @@ void Main(void)
     */
 #endif
 
-#ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
+#ifdef ENABLE_RESCUE_OPERATIONS
     if (BootMode == BOOT_MODE_F_LOCK && gEeprom.MENU_LOCK == true)
     {
         BootMode = BOOT_MODE_NORMAL;
@@ -154,7 +154,7 @@ void Main(void)
     {
 
         gF_LOCK = true;            // flag to say include the hidden menu items
-        #ifdef ENABLE_FEAT_F4HWN
+        #ifdef ENABLE_CUSTOM_FIRMWARE_MODS
             gEeprom.KEY_LOCK = 0;
             SETTINGS_SaveSettings();
             #ifndef ENABLE_VOX
@@ -166,7 +166,7 @@ void Main(void)
             #ifdef ENABLE_NOAA
                 gMenuCursor += 1; // move to hidden section, fix me if change... !!!
             #endif
-            #ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
+            #ifdef ENABLE_RESCUE_OPERATIONS
                 gMenuCursor += 1; // move to hidden section, fix me if change... !!!
             #endif
             gSubMenuSelection = gSetting_F_LOCK;
@@ -218,7 +218,7 @@ void Main(void)
 
         BACKLIGHT_TurnOn();
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
         if (gEeprom.POWER_ON_DISPLAY_MODE != POWER_ON_DISPLAY_MODE_NONE && gEeprom.POWER_ON_DISPLAY_MODE != POWER_ON_DISPLAY_MODE_SOUND)
 #else
         if (gEeprom.POWER_ON_DISPLAY_MODE != POWER_ON_DISPLAY_MODE_NONE)
@@ -285,7 +285,7 @@ void Main(void)
     }
 
     /*
-    #ifdef ENABLE_FEAT_F4HWN_RESUME_STATE
+    #ifdef ENABLE_BOOT_RESUME_STATE
     if(gEeprom.CURRENT_STATE == 2 || gEeprom.CURRENT_STATE == 5)
     {
             gScanRangeStart = gScanRangeStart ? 0 : gTxVfo->pRX->Frequency;
@@ -328,7 +328,7 @@ void Main(void)
     #endif
     */
 
-    #ifdef ENABLE_FEAT_F4HWN_RESUME_STATE
+    #ifdef ENABLE_BOOT_RESUME_STATE
         if (gEeprom.CURRENT_STATE == 2 || gEeprom.CURRENT_STATE == 5) {
             gScanRangeStart = gScanRangeStart ? 0 : gTxVfo->pRX->Frequency;
             gScanRangeStop = gEeprom.VfoInfo[!gEeprom.TX_VFO].freq_config_RX.Frequency;

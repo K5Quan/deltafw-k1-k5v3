@@ -16,26 +16,26 @@
 
 #include <string.h>
 
-#include "features/chFrScanner.h"
+#include "apps/scanner/chFrScanner.h"
 #ifdef ENABLE_FMRADIO
-    #include "features/fm.h"
+    #include "apps/fm/fm.h"
 #endif
-#include "features/scanner.h"
-#include "bitmaps.h"
+#include "apps/scanner/scanner.h"
+#include "ui/bitmaps.h"
 #include "drivers/bsp/keyboard.h"
 #include "drivers/bsp/st7565.h"
 #include "external/printf/printf.h"
 #include "functions.h"
-#include "helper/battery.h"
-#include "misc.h"
-#include "settings.h"
-#include "ui/battery.h"
+#include "apps/battery/battery.h"
+#include "core/misc.h"
+#include "apps/settings/settings.h"
+#include "apps/battery/battery_ui.h"
 #include "ui/helper.h"
 #include "ui/ui.h"
 #include "ui/status.h"
 
-#ifdef ENABLE_FEAT_F4HWN_RX_TX_TIMER
-#ifndef ENABLE_FEAT_F4HWN_DEBUG
+#ifdef ENABLE_RX_TX_TIMER_DISPLAY
+#ifndef ENABLE_FIRMWARE_DEBUG_LOGGING
 static void convertTime(uint8_t *line, uint8_t type) 
 {
     uint16_t t = (type == 0) ? (gTxTimerCountdown_500ms / 2) : (3600 - gRxTimerCountdown_500ms / 2);
@@ -114,7 +114,7 @@ void UI_DisplayStatus() {
     }
 
     // USB-C
-#ifdef ENABLE_FEAT_F4HWN_CHARGING_C
+#ifdef ENABLE_USBC_CHARGING_INDICATOR
     if (gChargingWithTypeC) {
         *p++ = 'U';
         *p++ = 'S';

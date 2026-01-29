@@ -14,14 +14,28 @@
  *     limitations under the License.
  */
 
-#ifndef VERSION_H
-#define VERSION_H
+#ifndef HELPER_BOOT_H
+#define HELPER_BOOT_H
 
-extern const char Version[];
-extern const char UART_Version[];
+#include <stdint.h>
+#include "drivers/bsp/keyboard.h"
+
+enum BOOT_Mode_t
+{
+    BOOT_MODE_NORMAL = 0,
+    BOOT_MODE_F_LOCK,
+    #ifdef ENABLE_RESCUE_OPERATIONS
+        BOOT_MODE_RESCUE_OPS,
+    #endif
+    #ifdef ENABLE_AIRCOPY
+        BOOT_MODE_AIRCOPY
+    #endif
+};
+
+typedef enum BOOT_Mode_t BOOT_Mode_t;
+
+BOOT_Mode_t BOOT_GetMode(void);
+void BOOT_ProcessMode(BOOT_Mode_t Mode);
 
 #endif
 
-#ifdef ENABLE_FEAT_F4HWN
-extern const char Edition[];
-#endif

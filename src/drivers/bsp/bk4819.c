@@ -18,7 +18,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include "settings.h"
+#include "apps/settings/settings.h"
 
 #include "audio.h"
 

@@ -19,7 +19,7 @@
 #include <string.h>
 
 #include "features/action.h"
-#include "features/fm.h"
+#include "apps/fm/fm.h"
 #include "features/generic.h"
 #include "audio.h"
 #include "drivers/bsp/bk1080.h"
@@ -27,8 +27,8 @@
 #include "drivers/bsp/py25q16.h"
 #include "drivers/bsp/gpio.h"
 #include "functions.h"
-#include "misc.h"
-#include "settings.h"
+#include "core/misc.h"
+#include "apps/settings/settings.h"
 #include "ui/inputbox.h"
 #include "ui/ui.h"
 
@@ -116,7 +116,7 @@ void FM_TurnOff(void)
 
     gUpdateStatus  = true;
 
-    #ifdef ENABLE_FEAT_F4HWN_RESUME_STATE
+    #ifdef ENABLE_BOOT_RESUME_STATE
         gEeprom.CURRENT_STATE = 0;
         SETTINGS_WriteCurrentState();
     #endif
@@ -632,7 +632,7 @@ void FM_Start(void)
     gEnableSpeaker       = true;
     gUpdateStatus        = true;
 
-    #ifdef ENABLE_FEAT_F4HWN_RESUME_STATE
+    #ifdef ENABLE_BOOT_RESUME_STATE
         gEeprom.CURRENT_STATE = 3;
         SETTINGS_WriteCurrentState();
     #endif

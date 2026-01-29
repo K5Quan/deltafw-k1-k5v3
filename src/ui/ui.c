@@ -17,18 +17,18 @@
 #include <assert.h>
 #include <string.h>
 
-#include "features/chFrScanner.h"
+#include "apps/scanner/chFrScanner.h"
 #include "features/dtmf.h"
 #ifdef ENABLE_FMRADIO
-    #include "features/fm.h"
+    #include "apps/fm/fm.h"
 #endif
 #include "drivers/bsp/keyboard.h"
-#include "misc.h"
+#include "core/misc.h"
 #ifdef ENABLE_AIRCOPY
-    #include "ui/aircopy.h"
+    #include "apps/aircopy/aircopy_ui.h"
 #endif
 #ifdef ENABLE_FMRADIO
-    #include "ui/fmradio.h"
+    #include "apps/fm/fm_ui.h"
 #endif
 #ifdef ENABLE_REGA
     #include "features/rega.h"
@@ -36,9 +36,9 @@
 #include "ui/inputbox.h"
 #include "ui/main.h"
 #include "ui/menu.h"
-#include "ui/scanner.h"
+#include "apps/scanner/scanner_ui.h"
 #include "ui/ui.h"
-#include "../misc.h"
+#include "core/misc.h"
 
 GUI_DisplayType_t gScreenToDisplay;
 GUI_DisplayType_t gRequestDisplayScreen = DISPLAY_INVALID;

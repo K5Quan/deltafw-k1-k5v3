@@ -1,9 +1,9 @@
 
 #include "features/app.h"
-#include "features/chFrScanner.h"
+#include "apps/scanner/chFrScanner.h"
 #include "functions.h"
-#include "misc.h"
-#include "settings.h"
+#include "core/misc.h"
+#include "apps/settings/settings.h"
 //#include "debugging.h"
 
 int8_t            gScanStateDir;
@@ -27,7 +27,7 @@ scan_next_chan_t    currentScanList;
 uint32_t            initialFrqOrChan;
 uint8_t             initialCROSS_BAND_RX_TX;
 
-#ifndef ENABLE_FEAT_F4HWN
+#ifndef ENABLE_CUSTOM_FIRMWARE_MODS
     uint32_t lastFoundFrqOrChan;
 #else
     uint32_t lastFoundFrqOrChan;
@@ -68,7 +68,7 @@ void CHFRSCANNER_Start(const bool storeBackupSettings, const int8_t scan_directi
         NextFreqChannel();
     }
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     lastFoundFrqOrChanOld = lastFoundFrqOrChan;
 #endif
 
@@ -170,7 +170,7 @@ void CHFRSCANNER_Found(void)
     }
     */
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     lastFoundFrqOrChanOld = lastFoundFrqOrChan;
 #endif
 
@@ -215,7 +215,7 @@ void CHFRSCANNER_Stop(void)
         }
     }
 
-    #ifdef ENABLE_FEAT_F4HWN_RESUME_STATE
+    #ifdef ENABLE_BOOT_RESUME_STATE
         gEeprom.CURRENT_STATE = 0;
         SETTINGS_WriteCurrentState();
     #endif

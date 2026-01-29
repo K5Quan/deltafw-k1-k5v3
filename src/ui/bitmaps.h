@@ -17,7 +17,7 @@ extern const uint8_t gFontMute[12];
 extern const uint8_t gFontXB[2][6];
 extern const uint8_t gFontMO[2][6];
 extern const uint8_t gFontDWR[3][6];
-#ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
+#ifdef ENABLE_RESCUE_OPERATIONS
     extern const uint8_t gFontRO[2][6];
 #endif
 extern const uint8_t gFontHold[2][5];

@@ -19,16 +19,16 @@
 
 #include "features/action.h"
 #include "features/app.h"
-#include "features/chFrScanner.h"
+#include "apps/scanner/chFrScanner.h"
 #include "features/common.h"
 #include "features/dtmf.h"
 #ifdef ENABLE_FLASHLIGHT
     #include "features/flashlight.h"
 #endif
 #ifdef ENABLE_FMRADIO
-    #include "features/fm.h"
+    #include "apps/fm/fm.h"
 #endif
-#include "features/scanner.h"
+#include "apps/scanner/scanner.h"
 #include "audio.h"
 #ifdef ENABLE_FMRADIO
     #include "drivers/bsp/bk1080.h"
@@ -37,8 +37,8 @@
 #include "drivers/bsp/gpio.h"
 #include "drivers/bsp/backlight.h"
 #include "functions.h"
-#include "misc.h"
-#include "settings.h"
+#include "core/misc.h"
+#include "apps/settings/settings.h"
 #include "ui/inputbox.h"
 #include "ui/ui.h"
 #ifdef ENABLE_REGA
@@ -103,7 +103,7 @@ void (*action_opt_table[])(void) = {
     [ACTION_OPT_BLMIN_TMP_OFF] = &FUNCTION_NOP,
 #endif
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     [ACTION_OPT_RXMODE] = &ACTION_RxMode,
     [ACTION_OPT_MAINONLY] = &ACTION_MainOnly,
     [ACTION_OPT_PTT] = &ACTION_Ptt,
@@ -114,7 +114,7 @@ void (*action_opt_table[])(void) = {
     //#else
     //    [ACTION_OPT_MUTE] = &FUNCTION_NOP,
     //#endif
-    #ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
+    #ifdef ENABLE_RESCUE_OPERATIONS
         [ACTION_OPT_POWER_HIGH] = &ACTION_Power_High,
         [ACTION_OPT_REMOVE_OFFSET] = &ACTION_Remove_Offset,
     #endif
@@ -231,7 +231,7 @@ void ACTION_Scan(bool bRestart)
 
         // channel mode. Keep scanning but toggle between scan lists
         gEeprom.SCAN_LIST_DEFAULT = (gEeprom.SCAN_LIST_DEFAULT + 1) % 6;
-        #ifdef ENABLE_FEAT_F4HWN_RESUME_STATE
+        #ifdef ENABLE_BOOT_RESUME_STATE
             SETTINGS_WriteCurrentState();
         #endif
 
@@ -240,7 +240,7 @@ void ACTION_Scan(bool bRestart)
         gScanPauseDelayIn_10ms = 1;
         gScheduleScanListen    = false;
     } else {
-        #ifdef ENABLE_FEAT_F4HWN_RESUME_STATE
+        #ifdef ENABLE_BOOT_RESUME_STATE
         if(gScanRangeStart == 0) // No ScanRange
         {
             gEeprom.CURRENT_STATE = 1;
@@ -484,7 +484,7 @@ void ACTION_BlminTmpOff(void)
 }
 #endif
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
 void ACTION_Update(void)
 {
     gSaveRxMode          = false;
@@ -547,7 +547,7 @@ void ACTION_Wn(void)
         BK4819_SetFilterBandwidth(BK4819_FILTER_BW_AM, true);
         return;
     }
-    #ifdef ENABLE_FEAT_F4HWN_NARROWER
+    #ifdef ENABLE_NARROWER_BW_FILTER
         bool narrower = 0;
         if (FUNCTION_IsRx())
         {
@@ -653,7 +653,7 @@ void ACTION_BackLightOnDemand(void)
     }
     //#endif
 
-    #ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
+    #ifdef ENABLE_RESCUE_OPERATIONS
     void ACTION_Power_High(void)
     {
         gPowerHigh = !gPowerHigh;

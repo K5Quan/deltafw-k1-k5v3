@@ -13,13 +13,13 @@
  *     See the License for the specific language governing permissions and
  *     limitations under the License.
  */
-#include "features/spectrum.h"
+#include "apps/spectrum/spectrum.h"
 #include "am_fix.h"
 #include "audio.h"
-#include "misc.h"
+#include "core/misc.h"
 
 #ifdef ENABLE_SCAN_RANGES
-#include "chFrScanner.h"
+#include "apps/scanner/chFrScanner.h"
 #endif
 
 #include "drivers/bsp/backlight.h"
@@ -27,11 +27,11 @@
 #include "ui/helper.h"
 #include "ui/main.h"
 
-#ifdef ENABLE_FEAT_F4HWN_SCREENSHOT
+#ifdef ENABLE_SERIAL_SCREENCAST
 #include "screenshot.h"
 #endif
 
-#ifdef ENABLE_FEAT_F4HWN_SPECTRUM
+#ifdef ENABLE_SPECTRUM_EXTENSIONS
 #include "drivers/bsp/py25q16.h"
 #endif
 
@@ -108,7 +108,7 @@ RegisterSpec registerSpecs[] = {
     // {"MIX", 0x13, 3, 0b11, 1}, // TODO: hidden
 };
 
-#ifdef ENABLE_FEAT_F4HWN_SPECTRUM
+#ifdef ENABLE_SPECTRUM_EXTENSIONS
 const int8_t LNAsOptions[] = {-19, -16, -11, 0};
 const int8_t LNAOptions[] = {-24, -19, -14, -9, -6, -4, -2, 0};
 const int8_t VGAOptions[] = {-33, -27, -21, -15, -9, -6, -3, 0};
@@ -117,7 +117,7 @@ const char *BPFOptions[] = {"8.46", "7.25", "6.35", "5.64", "5.08", "4.62", "4.2
 
 uint16_t statuslineUpdateTimer = 0;
 
-#ifdef ENABLE_FEAT_F4HWN_SPECTRUM
+#ifdef ENABLE_SPECTRUM_EXTENSIONS
 static void LoadSettings()
 {
     uint8_t Data[8] = {0};
@@ -213,7 +213,7 @@ static void SetRegMenuValue(uint8_t st, bool add)
 
 // GUI functions
 
-#ifndef ENABLE_FEAT_F4HWN
+#ifndef ENABLE_CUSTOM_FIRMWARE_MODS
 static void PutPixel(uint8_t x, uint8_t y, bool fill)
 {
     UI_DrawPixelBuffer(gFrameBuffer, x, y, fill);
@@ -297,7 +297,7 @@ static void RestoreRegisters()
         BK4819_WriteRegister(registers_to_save[i], registers_stack[i]);
     }
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     gVfoConfigureMode = VFO_CONFIGURE;
 #endif
 }
@@ -332,7 +332,7 @@ static void ResetPeak()
     peak.rssi = 0;
 }
 
-#ifdef ENABLE_FEAT_F4HWN_SPECTRUM
+#ifdef ENABLE_SPECTRUM_EXTENSIONS
     static void setTailFoundInterrupt()
     {
         BK4819_WriteRegister(BK4819_REG_3F, BK4819_REG_02_CxCSS_TAIL | BK4819_REG_02_SQUELCH_FOUND);
@@ -462,7 +462,7 @@ static void ToggleAudio(bool on)
 
 static void ToggleRX(bool on)
 {
-    #ifdef ENABLE_FEAT_F4HWN_SPECTRUM
+    #ifdef ENABLE_SPECTRUM_EXTENSIONS
     if (isListening == on) {
         return;
     }
@@ -478,7 +478,7 @@ static void ToggleRX(bool on)
 
     if (on)
     {
-    #ifdef ENABLE_FEAT_F4HWN_SPECTRUM
+    #ifdef ENABLE_SPECTRUM_EXTENSIONS
         listenT = 100;
         BK4819_WriteRegister(0x43, listenBWRegValues[settings.listenBw]);
         setTailFoundInterrupt();
@@ -896,7 +896,7 @@ uint8_t Rssi2Y(uint16_t rssi)
     return DrawingEndY - Rssi2PX(rssi, 0, DrawingEndY);
 }
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     static void DrawSpectrum()
     {
         uint16_t steps = GetStepsCount();
@@ -997,7 +997,7 @@ static void DrawStatus()
     }
 }
 
-#ifdef ENABLE_FEAT_F4HWN_SPECTRUM
+#ifdef ENABLE_SPECTRUM_EXTENSIONS
 static void ShowChannelName(uint32_t f)
 {
     static uint32_t channelF = 0;
@@ -1043,7 +1043,7 @@ static void DrawF(uint32_t f)
     sprintf(String, "%4sk", bwOptions[settings.listenBw]);
     UI_PrintStringSmallest(String, 108, 7, false, true);
 
-#ifdef ENABLE_FEAT_F4HWN_SPECTRUM
+#ifdef ENABLE_SPECTRUM_EXTENSIONS
     ShowChannelName(f);
 #endif
 }
@@ -1228,10 +1228,10 @@ static void OnKeyDown(uint8_t key)
             menuState = 0;
             break;
         }
-#ifdef ENABLE_FEAT_F4HWN_SPECTRUM
+#ifdef ENABLE_SPECTRUM_EXTENSIONS
         SaveSettings();
 #endif
-#ifdef ENABLE_FEAT_F4HWN_RESUME_STATE
+#ifdef ENABLE_BOOT_RESUME_STATE
         gEeprom.CURRENT_STATE = 0;
         SETTINGS_WriteCurrentState();
 #endif
@@ -1469,7 +1469,7 @@ static void RenderStill()
         UI_PrintStringSmallest(String, offset + 2, row * 8 + 2, false,
                             menuState != idx);
 
-#ifdef ENABLE_FEAT_F4HWN_SPECTRUM
+#ifdef ENABLE_SPECTRUM_EXTENSIONS
         if(idx == 1)
         {
             sprintf(String, "%ddB", LNAsOptions[GetRegMenuValue(idx)]);
@@ -1617,7 +1617,7 @@ static void UpdateStill()
 static void UpdateListening()
 {
     preventKeypress = false;
-    #ifdef ENABLE_FEAT_F4HWN_SPECTRUM
+    #ifdef ENABLE_SPECTRUM_EXTENSIONS
     bool tailFound = checkIfTailFound();
     if (tailFound)
     #else
@@ -1647,7 +1647,7 @@ static void UpdateListening()
     peak.rssi = scanInfo.rssi;
     redrawScreen = true;
 
-    #ifdef ENABLE_FEAT_F4HWN_SPECTRUM
+    #ifdef ENABLE_SPECTRUM_EXTENSIONS
         if ((IsPeakOverLevel() && !tailFound) || monitorMode)
         {
             listenT = 100;
@@ -1735,7 +1735,7 @@ static void Tick()
     {
         Render();
         // For screenshot
-        #ifdef ENABLE_FEAT_F4HWN_SCREENSHOT
+        #ifdef ENABLE_SERIAL_SCREENCAST
             getScreenShot(false);
         #endif
         redrawScreen = false;
@@ -1746,7 +1746,7 @@ void APP_RunSpectrum()
 {
     // TX here coz it always? set to active VFO
     vfo = gEeprom.TX_VFO;
-#ifdef ENABLE_FEAT_F4HWN_SPECTRUM
+#ifdef ENABLE_SPECTRUM_EXTENSIONS
     LoadSettings();
 #endif
     // set the current frequency in the middle of the display
@@ -1763,7 +1763,7 @@ void APP_RunSpectrum()
             }
         }
         settings.stepsCount = STEPS_128;
-        #ifdef ENABLE_FEAT_F4HWN_RESUME_STATE
+        #ifdef ENABLE_BOOT_RESUME_STATE
             gEeprom.CURRENT_STATE = 5;
         #endif
     }
@@ -1771,12 +1771,12 @@ void APP_RunSpectrum()
 #endif
         currentFreq = initialFreq = gTxVfo->pRX->Frequency -
                                     ((GetStepsCount() / 2) * GetScanStep());
-        #ifdef ENABLE_FEAT_F4HWN_RESUME_STATE
+        #ifdef ENABLE_BOOT_RESUME_STATE
             gEeprom.CURRENT_STATE = 4;
         #endif
     }
 
-    #ifdef ENABLE_FEAT_F4HWN_RESUME_STATE
+    #ifdef ENABLE_BOOT_RESUME_STATE
         SETTINGS_WriteCurrentState();
     #endif
 
@@ -1790,7 +1790,7 @@ void APP_RunSpectrum()
     ToggleRX(true), ToggleRX(false); // hack to prevent noise when squelch off
     RADIO_SetModulation(settings.modulationType = gTxVfo->Modulation);
 
-#ifdef ENABLE_FEAT_F4HWN_SPECTRUM
+#ifdef ENABLE_SPECTRUM_EXTENSIONS
     BK4819_SetFilterBandwidth(settings.listenBw, false);
 #else
     BK4819_SetFilterBandwidth(settings.listenBw = BK4819_FILTER_BW_WIDE, false);

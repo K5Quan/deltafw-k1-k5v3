@@ -28,8 +28,8 @@
 #include "external/printf/printf.h"
 #include "frequencies.h"
 #include "functions.h"
-#include "misc.h"
-#include "settings.h"
+#include "core/misc.h"
+#include "apps/settings/settings.h"
 #ifdef ENABLE_AGC_SHOW_DATA
 #include "ui/main.h"
 #endif

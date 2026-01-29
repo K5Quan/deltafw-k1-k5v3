@@ -14,7 +14,7 @@
  *     limitations under the License.
  */
 
-#include "font.h"
+#include "ui/font.h"
 
 // removed last and middle column which was all 0x00
 // also the space char is not needed 

@@ -140,7 +140,7 @@ extern const uint16_t        scan_pause_delay_in_7_10ms;
 
 extern const uint8_t         gMicGain_dB2[5];
 
-#ifndef ENABLE_FEAT_F4HWN
+#ifndef ENABLE_CUSTOM_FIRMWARE_MODS
 extern bool                  gSetting_350TX;
 #endif
 
@@ -148,7 +148,7 @@ extern bool                  gSetting_350TX;
 extern bool                  gSetting_KILLED;
 #endif
 
-#ifndef ENABLE_FEAT_F4HWN
+#ifndef ENABLE_CUSTOM_FIRMWARE_MODS
 extern bool                  gSetting_200TX;
 extern bool                  gSetting_500TX;
 #endif
@@ -163,12 +163,12 @@ extern enum BacklightOnRxTx_t gSetting_backlight_on_tx_rx;
     extern bool              gSetting_AM_fix;
 #endif
 
-#ifdef ENABLE_FEAT_F4HWN_SLEEP 
+#ifdef ENABLE_DEEP_SLEEP_MODE 
     extern uint8_t           gSetting_set_off;
     extern bool              gWakeUp;
 #endif
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     extern uint8_t            gSetting_set_pwr;
     extern bool               gSetting_set_ptt;
     extern uint8_t            gSetting_set_tot;
@@ -178,12 +178,12 @@ extern enum BacklightOnRxTx_t gSetting_backlight_on_tx_rx;
     extern bool               gSetting_set_lck;
     extern bool               gSetting_set_met;
     extern bool               gSetting_set_gui;
-    #ifdef ENABLE_FEAT_F4HWN_NARROWER
+    #ifdef ENABLE_NARROWER_BW_FILTER
         extern bool               gSetting_set_nfm;
     #endif
     extern bool               gSetting_set_tmr;
     extern bool               gSetting_set_ptt_session;
-    #ifdef ENABLE_FEAT_F4HWN_DEBUG
+    #ifdef ENABLE_FIRMWARE_DEBUG_LOGGING
         extern uint8_t            gDebug;
     #endif
     extern uint8_t            gDW;
@@ -192,7 +192,7 @@ extern enum BacklightOnRxTx_t gSetting_backlight_on_tx_rx;
     extern uint8_t            crc[15];
     extern uint8_t            lErrorsDuringAirCopy;
     extern uint8_t            gAircopyStep;
-    #ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
+    #ifdef ENABLE_RESCUE_OPERATIONS
         extern bool               gPowerHigh;
         extern bool               gRemoveOffset;
     #endif
@@ -249,14 +249,14 @@ extern volatile bool         gNextTimeslice_500ms;
 extern volatile uint16_t     gTxTimerCountdown_500ms;
 extern volatile bool         gTxTimeoutReached;
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     extern volatile uint16_t gTxTimerCountdownAlert_500ms;
     extern volatile bool     gTxTimeoutReachedAlert;
     extern volatile uint16_t gTxTimeoutToneAlert;
-    #ifdef ENABLE_FEAT_F4HWN_RX_TX_TIMER
+    #ifdef ENABLE_RX_TX_TIMER_DISPLAY
         extern volatile uint16_t gRxTimerCountdown_500ms;
     #endif
-    #ifdef ENABLE_FEAT_F4HWN_SCREENSHOT
+    #ifdef ENABLE_SERIAL_SCREENCAST
         extern volatile uint8_t  gUART_LockScreenshot; // lock screenshot if Chirp is used
     #endif
 #endif
@@ -379,7 +379,7 @@ extern volatile uint8_t      gVFOStateResumeCountdown_500ms;
 extern uint8_t               gIsLocked;
 extern volatile uint8_t      boot_counter_10ms;
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     extern bool                  gK5startup;
     extern bool                  gBackLight;
     extern bool                  gMute;

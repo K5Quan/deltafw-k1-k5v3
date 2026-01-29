@@ -16,7 +16,7 @@
 
 #include "py32f0xx.h"
 #include "systick.h"
-#include "misc.h"
+#include "core/misc.h"
 
 // 0x20000324
 static uint32_t gTickMultiplier;

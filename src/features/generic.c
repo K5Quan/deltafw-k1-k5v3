@@ -17,23 +17,23 @@
 #include <string.h>
 
 #include "features/app.h"
-#include "features/chFrScanner.h"
+#include "apps/scanner/chFrScanner.h"
 #include "features/common.h"
 
 #ifdef ENABLE_FMRADIO
-    #include "features/fm.h"
+    #include "apps/fm/fm.h"
 #endif
 
 #include "features/generic.h"
 #include "features/menu.h"
-#include "features/scanner.h"
+#include "apps/scanner/scanner.h"
 #include "audio.h"
 #include "drivers/bsp/keyboard.h"
 #include "dtmf.h"
 #include "external/printf/printf.h"
 #include "functions.h"
-#include "misc.h"
-#include "settings.h"
+#include "core/misc.h"
+#include "apps/settings/settings.h"
 #include "ui/inputbox.h"
 #include "ui/ui.h"
 

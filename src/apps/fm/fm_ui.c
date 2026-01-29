@@ -18,13 +18,13 @@
 
 #include <string.h>
 
-#include "features/fm.h"
+#include "apps/fm/fm.h"
 #include "drivers/bsp/bk1080.h"
 #include "drivers/bsp/st7565.h"
 #include "external/printf/printf.h"
-#include "misc.h"
-#include "settings.h"
-#include "ui/fmradio.h"
+#include "core/misc.h"
+#include "apps/settings/settings.h"
+#include "apps/fm/fm_ui.h"
 #include "ui/helper.h"
 #include "ui/inputbox.h"
 #include "ui/ui.h"

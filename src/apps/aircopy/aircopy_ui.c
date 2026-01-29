@@ -18,12 +18,12 @@
 
 #include <string.h>
 
-#include "features/aircopy.h"
+#include "apps/aircopy/aircopy.h"
 #include "drivers/bsp/st7565.h"
 #include "external/printf/printf.h"
-#include "misc.h"
+#include "core/misc.h"
 #include "radio.h"
-#include "ui/aircopy.h"
+#include "apps/aircopy/aircopy_ui.h"
 #include "ui/helper.h"
 #include "ui/inputbox.h"
 

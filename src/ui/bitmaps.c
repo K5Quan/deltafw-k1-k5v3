@@ -1,5 +1,5 @@
 
-#include "bitmaps.h"
+#include "ui/bitmaps.h"
 
 // all these images are on their right sides
 // turn your monitor 90-deg anti-clockwise to see the images
@@ -94,7 +94,7 @@ const uint8_t gFontDWR[3][6] =
     {0x00, 0x7f, 0x9, 0x19, 0x29, 0x46},
 };
 
-#ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
+#ifdef ENABLE_RESCUE_OPERATIONS
     const uint8_t gFontRO[2][6] =
     {   // "RO"
         {0x00, 0x7f, 0x9, 0x19, 0x29, 0x46},

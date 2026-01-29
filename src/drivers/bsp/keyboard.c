@@ -20,7 +20,7 @@
 #include "drivers/bsp/keyboard.h"
 #include "drivers/bsp/systick.h"
 #include "drivers/bsp/i2c.h"
-#include "misc.h"
+#include "core/misc.h"
 
 KEY_Code_t gKeyReading0     = KEY_INVALID;
 KEY_Code_t gKeyReading1     = KEY_INVALID;

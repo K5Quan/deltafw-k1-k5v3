@@ -18,7 +18,7 @@
 
 #include "keyboard_state.h"
 
-#include "../bitmaps.h"
+#include "ui/bitmaps.h"
 #include "../board.h"
 #include "py32f0xx.h"
 #include "../drivers/bsp/bk4819-regs.h"
@@ -29,11 +29,11 @@
 #include "../drivers/bsp/system.h"
 #include "../drivers/bsp/systick.h"
 #include "../external/printf/printf.h"
-#include "../font.h"
-#include "../helper/battery.h"
-#include "../misc.h"
+#include "ui/font.h"
+#include "../apps/battery/battery.h"
+#include "core/misc.h"
 #include "../radio.h"
-#include "../settings.h"
+#include "apps/settings/settings.h"
 #include "../ui/helper.h"
 #include "../audio.h"
 #include <stdbool.h>

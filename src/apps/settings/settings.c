@@ -19,16 +19,16 @@
 
 #include "features/dtmf.h"
 #ifdef ENABLE_FMRADIO
-    #include "features/fm.h"
+    #include "apps/fm/fm.h"
 #endif
 #include "drivers/bsp/bk1080.h"
 #include "drivers/bsp/bk4819.h"
 #include "drivers/bsp/py25q16.h"
-#include "misc.h"
-#include "settings.h"
+#include "core/misc.h"
+#include "apps/settings/settings.h"
 #include "ui/menu.h"
 
-#ifdef ENABLE_FEAT_F4HWN_RESET_CHANNEL
+#ifdef ENABLE_RESET_CHANNEL_FUNCTION
 static const uint32_t gDefaultFrequencyTable[] =
 {
     14500000,    //
@@ -52,7 +52,7 @@ void SETTINGS_InitEEPROM(void)
     #ifdef ENABLE_NOAA
         gEeprom.NOAA_AUTO_SCAN   = (Data[3] <  2) ? Data[3] : false;
     #endif
-    #ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
+    #ifdef ENABLE_RESCUE_OPERATIONS
         gEeprom.KEY_LOCK = (Data[4] & 0x01) != 0;
         gEeprom.MENU_LOCK = (Data[4] & 0x02) != 0;
         gEeprom.SET_KEY = ((Data[4] >> 2) & 0x0F) > 4 ? 0 : (Data[4] >> 2) & 0x0F;
@@ -77,14 +77,14 @@ void SETTINGS_InitEEPROM(void)
     gEeprom.BATTERY_SAVE          = (Data[3] < 6) ? Data[3] : 4;
     gEeprom.DUAL_WATCH            = (Data[4] < 3) ? Data[4] : DUAL_WATCH_CHAN_A;
     gEeprom.BACKLIGHT_TIME        = (Data[5] < 62) ? Data[5] : 12;
-    #ifdef ENABLE_FEAT_F4HWN_NARROWER
+    #ifdef ENABLE_NARROWER_BW_FILTER
         gEeprom.TAIL_TONE_ELIMINATION = Data[6] & 0x01;
         gSetting_set_nfm = (Data[6] >> 1) & 0x01;
     #else
         gEeprom.TAIL_TONE_ELIMINATION = (Data[6] < 2) ? Data[6] : false;
     #endif
 
-    #ifdef ENABLE_FEAT_F4HWN_RESUME_STATE
+    #ifdef ENABLE_BOOT_RESUME_STATE
         gEeprom.VFO_OPEN = Data[7] & 0x01;
         gEeprom.CURRENT_STATE = (Data[7] >> 1) & 0x07;
         gEeprom.CURRENT_LIST = (Data[7] >> 4) & 0x07;
@@ -142,7 +142,7 @@ void SETTINGS_InitEEPROM(void)
     gEeprom.KEY_2_LONG_PRESS_ACTION      = (Data[4] < ACTION_OPT_LEN) ? Data[4] : ACTION_OPT_NONE;
     gEeprom.SCAN_RESUME_MODE             = (Data[5] < 105)            ? Data[5] : 14;
     gEeprom.AUTO_KEYPAD_LOCK             = (Data[6] < 41)             ? Data[6] : 0;
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     gEeprom.POWER_ON_DISPLAY_MODE        = (Data[7] < 6)              ? Data[7] : POWER_ON_DISPLAY_MODE_VOLTAGE;
 #else
     gEeprom.POWER_ON_DISPLAY_MODE        = (Data[7] < 4)              ? Data[7] : POWER_ON_DISPLAY_MODE_VOLTAGE;
@@ -280,18 +280,18 @@ void SETTINGS_InitEEPROM(void)
     // 0F40..0F47
     PY25Q16_ReadBuffer(0x00b000, Data, 8);
     gSetting_F_LOCK            = (Data[0] < F_LOCK_LEN) ? Data[0] : F_LOCK_DEF;
-#ifndef ENABLE_FEAT_F4HWN
+#ifndef ENABLE_CUSTOM_FIRMWARE_MODS
     gSetting_350TX             = (Data[1] < 2) ? Data[1] : false;  // was true
 #endif
 #ifdef ENABLE_DTMF_CALLING
     gSetting_KILLED            = (Data[2] < 2) ? Data[2] : false;
 #endif
-#ifndef ENABLE_FEAT_F4HWN
+#ifndef ENABLE_CUSTOM_FIRMWARE_MODS
     gSetting_200TX             = (Data[3] < 2) ? Data[3] : false;
     gSetting_500TX             = (Data[4] < 2) ? Data[4] : false;
 #endif
     gSetting_350EN             = (Data[5] < 2) ? Data[5] : true;
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     gSetting_ScrambleEnable    = false;
 #else
     gSetting_ScrambleEnable    = (Data[6] < 2) ? Data[6] : true;
@@ -303,7 +303,7 @@ void SETTINGS_InitEEPROM(void)
     #ifdef ENABLE_AUDIO_BAR
         gSetting_mic_bar       = !!(Data[7] & (1u << 4));
     #endif
-    #ifndef ENABLE_FEAT_F4HWN
+    #ifndef ENABLE_CUSTOM_FIRMWARE_MODS
         #ifdef ENABLE_AM_FIX
             gSetting_AM_fix        = !!(Data[7] & (1u << 5));
         #endif
@@ -330,7 +330,7 @@ void SETTINGS_InitEEPROM(void)
         // 0F30..0F3F
         PY25Q16_ReadBuffer(0x00a000, gCustomAesKey, sizeof(gCustomAesKey));
         bHasCustomAesKey = false;
-        #ifndef ENABLE_FEAT_F4HWN
+        #ifndef ENABLE_CUSTOM_FIRMWARE_MODS
             for (unsigned int i = 0; i < ARRAY_SIZE(gCustomAesKey); i++)
             {
                 if (gCustomAesKey[i] != 0xFFFFFFFFu)
@@ -341,7 +341,7 @@ void SETTINGS_InitEEPROM(void)
             }
         #endif
 
-    #ifdef ENABLE_FEAT_F4HWN
+    #ifdef ENABLE_CUSTOM_FIRMWARE_MODS
         // 1FF0..0x1FF7
         // TODO: address TBD
         PY25Q16_ReadBuffer(0x00c000, Data, 8);
@@ -365,7 +365,7 @@ void SETTINGS_InitEEPROM(void)
 
         int tmp = (Data[5] & 0xF0) >> 4;
 
-#ifdef ENABLE_FEAT_F4HWN_INV
+#ifdef ENABLE_INVERTED_LCD_MODE
         gSetting_set_inv = (tmp >> 0) & 0x01;
 #else
         gSetting_set_inv = 0;
@@ -374,7 +374,7 @@ void SETTINGS_InitEEPROM(void)
         gSetting_set_met = (tmp >> 2) & 0x01;
         gSetting_set_gui = (tmp >> 3) & 0x01;
 
-#ifdef ENABLE_FEAT_F4HWN_CTR
+#ifdef ENABLE_LCD_CONTRAST_OPTION
         int ctr_value = Data[5] & 0x0F;
         gSetting_set_ctr = (ctr_value > 0 && ctr_value < 16) ? ctr_value : 10;
 #else
@@ -382,7 +382,7 @@ void SETTINGS_InitEEPROM(void)
 #endif
 
         gSetting_set_tmr = Data[4] & 0x01;
-#ifdef ENABLE_FEAT_F4HWN_SLEEP
+#ifdef ENABLE_DEEP_SLEEP_MODE
         gSetting_set_off = (Data[4] >> 1) > 120 ? 60 : (Data[4] >> 1); 
 #endif
 
@@ -452,7 +452,7 @@ void SETTINGS_LoadCalibration(void)
         gEeprom.VOLUME_GAIN          = (Misc.VOLUME_GAIN < 64) ? Misc.VOLUME_GAIN : 58;
         gEeprom.DAC_GAIN             = (Misc.DAC_GAIN    < 16) ? Misc.DAC_GAIN    : 8;
 
-        #ifdef ENABLE_FEAT_F4HWN
+        #ifdef ENABLE_CUSTOM_FIRMWARE_MODS
             gEeprom.VOLUME_GAIN_BACKUP   = gEeprom.VOLUME_GAIN;
         #endif
 
@@ -556,7 +556,7 @@ void SETTINGS_FactoryReset(bool bIsAll)
     {
         RADIO_InitInfo(gRxVfo, FREQ_CHANNEL_FIRST + BAND6_400MHz, 43350000);
 
-        #ifdef ENABLE_FEAT_F4HWN_RESET_CHANNEL
+        #ifdef ENABLE_RESET_CHANNEL_FUNCTION
             // set the first few memory channels
             for (i = 0; i < ARRAY_SIZE(gDefaultFrequencyTable); i++)
             {
@@ -568,13 +568,13 @@ void SETTINGS_FactoryReset(bool bIsAll)
             }
         #endif
 
-        #ifdef ENABLE_FEAT_F4HWN
+        #ifdef ENABLE_CUSTOM_FIRMWARE_MODS
             PY25Q16_SectorErase(0x00c000);
         #endif
     }
 
     // Prevent reset to restart in RO mode...
-    #ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
+    #ifdef ENABLE_RESCUE_OPERATIONS
         {
             uint8_t buf[0x10];
 
@@ -666,7 +666,7 @@ void SETTINGS_SaveSettings(void)
         State[3] = false;
     #endif
 
-    #ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
+    #ifdef ENABLE_RESCUE_OPERATIONS
         State[4] = (gEeprom.KEY_LOCK ? 0x01 : 0) | (gEeprom.MENU_LOCK ? 0x02 :0) | ((gEeprom.SET_KEY & 0x0F) << 2);
     #else
         State[4] = gEeprom.KEY_LOCK;
@@ -689,7 +689,7 @@ void SETTINGS_SaveSettings(void)
     State[3] = gEeprom.BATTERY_SAVE;
     State[4] = gEeprom.DUAL_WATCH;
 
-    #ifdef ENABLE_FEAT_F4HWN
+    #ifdef ENABLE_CUSTOM_FIRMWARE_MODS
         if(!gSaveRxMode)
         {
             State[2] = gCB;
@@ -707,13 +707,13 @@ void SETTINGS_SaveSettings(void)
         State[5] = gEeprom.BACKLIGHT_TIME;
     #endif
 
-    #ifdef ENABLE_FEAT_F4HWN_NARROWER
+    #ifdef ENABLE_NARROWER_BW_FILTER
         State[6] = (gEeprom.TAIL_TONE_ELIMINATION & 0x01) | ((gSetting_set_nfm & 0x03) << 1);
     #else
         State[6] = gEeprom.TAIL_TONE_ELIMINATION;
     #endif
 
-    #ifdef ENABLE_FEAT_F4HWN_RESUME_STATE
+    #ifdef ENABLE_BOOT_RESUME_STATE
         State[7] = (gEeprom.VFO_OPEN & 0x01) | ((gEeprom.CURRENT_STATE & 0x07) << 1) | ((gEeprom.SCAN_LIST_DEFAULT & 0x07) << 4);
     #else
         State[7] = gEeprom.VFO_OPEN;
@@ -826,18 +826,18 @@ void SETTINGS_SaveSettings(void)
     // 0x0F40
     State = SecBuf;
     State[0]  = gSetting_F_LOCK;
-#ifndef ENABLE_FEAT_F4HWN
+#ifndef ENABLE_CUSTOM_FIRMWARE_MODS
     State[1]  = gSetting_350TX;
 #endif
 #ifdef ENABLE_DTMF_CALLING
     State[2]  = gSetting_KILLED;
 #endif
-#ifndef ENABLE_FEAT_F4HWN
+#ifndef ENABLE_CUSTOM_FIRMWARE_MODS
     State[3]  = gSetting_200TX;
     State[4]  = gSetting_500TX;
 #endif
     State[5]  = gSetting_350EN;
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     State[6]  = false;
 #else
     State[6]  = gSetting_ScrambleEnable;
@@ -849,7 +849,7 @@ void SETTINGS_SaveSettings(void)
     #ifdef ENABLE_AUDIO_BAR
         if (!gSetting_mic_bar)           State[7] &= ~(1u << 4);
     #endif
-    #ifndef ENABLE_FEAT_F4HWN
+    #ifndef ENABLE_CUSTOM_FIRMWARE_MODS
         #ifdef ENABLE_AM_FIX
             if (!gSetting_AM_fix)            State[7] &= ~(1u << 5);
         #endif
@@ -860,7 +860,7 @@ void SETTINGS_SaveSettings(void)
 
     // ------------------
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     // 0x1FF0
     State = SecBuf;
     // TODO: TBD
@@ -888,7 +888,7 @@ void SETTINGS_SaveSettings(void)
         tmp = tmp | (1 << 3);
     */
 
-#ifdef ENABLE_FEAT_F4HWN_SLEEP 
+#ifdef ENABLE_DEEP_SLEEP_MODE 
     State[4] = (gSetting_set_off << 1) | (gSetting_set_tmr & 0x01);
 #else
     State[4] = gSetting_set_tmr ? (1 << 0) : 0;
@@ -908,7 +908,7 @@ void SETTINGS_SaveSettings(void)
     PY25Q16_WriteBuffer(0x00c000, SecBuf, 8, true);
 #endif
 
-#ifdef ENABLE_FEAT_F4HWN_VOL
+#ifdef ENABLE_SYSTEM_INFO_MENU
     SETTINGS_WriteCurrentVol();
 #endif
 }
@@ -960,7 +960,7 @@ void SETTINGS_SaveChannel(uint8_t Channel, uint8_t VFO, const VFO_Info_t *pVFO, 
 #endif
         ;
         State -> _8[6] =  pVFO->STEP_SETTING;
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
         State -> _8[7] =  0;
 #else
         State -> _8[7] =  pVFO->SCRAMBLING_TYPE;
@@ -1029,7 +1029,7 @@ void SETTINGS_UpdateChannel(uint8_t channel, const VFO_Info_t *pVFO, bool keep, 
 
         state.__val = att.__val;
 
-#ifndef ENABLE_FEAT_F4HWN
+#ifndef ENABLE_CUSTOM_FIRMWARE_MODS
         save = true;
 #endif
         if(save)
@@ -1055,7 +1055,7 @@ void SETTINGS_WriteBuildOptions(void)
 {
     uint8_t State[8];
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     // 0x1FF0
     PY25Q16_ReadBuffer(0x00c000, State, sizeof(State));
 #endif
@@ -1097,7 +1097,7 @@ State[1] = 0
 #ifdef ENABLE_BYP_RAW_DEMODULATORS
     | (1 << 2)
 #endif
-#ifdef ENABLE_FEAT_F4HWN_GAME
+#ifdef ENABLE_APP_BREAKOUT_GAME
     | (1 << 3)
 #endif
 #ifdef ENABLE_AM_FIX
@@ -1106,14 +1106,14 @@ State[1] = 0
 #ifdef ENABLE_SPECTRUM
     | (1 << 5)
 #endif
-#ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
+#ifdef ENABLE_RESCUE_OPERATIONS
     | (1 << 6)
 #endif
 ;
     PY25Q16_WriteBuffer(0x00c000, State, sizeof(State), true);
 }
 
-#ifdef ENABLE_FEAT_F4HWN_RESUME_STATE
+#ifdef ENABLE_BOOT_RESUME_STATE
     void SETTINGS_WriteCurrentState(void)
     {
         uint8_t State[0x10];
@@ -1125,7 +1125,7 @@ State[1] = 0
     }
 #endif
 
-#ifdef ENABLE_FEAT_F4HWN_VOL
+#ifdef ENABLE_SYSTEM_INFO_MENU
     void SETTINGS_WriteCurrentVol(void)
     {
         uint8_t State[8];
@@ -1136,7 +1136,7 @@ State[1] = 0
     }
 #endif
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
 void SETTINGS_ResetTxLock(void)
 {
     // TODO: This is expensive operation!

@@ -20,7 +20,7 @@
 #include "am_fix.h"
 #include "features/dtmf.h"
 #ifdef ENABLE_FMRADIO
-    #include "features/fm.h"
+    #include "apps/fm/fm.h"
 #endif
 #include "audio.h"
 #include "dcs.h"
@@ -30,10 +30,10 @@
 #include "drivers/bsp/system.h"
 #include "frequencies.h"
 #include "functions.h"
-#include "helper/battery.h"
-#include "misc.h"
+#include "apps/battery/battery.h"
+#include "core/misc.h"
 #include "radio.h"
-#include "settings.h"
+#include "apps/settings/settings.h"
 #include "ui/menu.h"
 
 VFO_Info_t    *gTxVfo;
@@ -271,7 +271,7 @@ void RADIO_ConfigureChannel(const unsigned int VFO, const unsigned int configure
         pVfo->StepFrequency = gStepFrequencyTable[tmp];
 
         tmp = data[7];
-#ifndef ENABLE_FEAT_F4HWN
+#ifndef ENABLE_CUSTOM_FIRMWARE_MODS
         if (tmp > (ARRAY_SIZE(gSubMenu_SCRAMBLER) - 1))
             tmp = 0;
         pVfo->SCRAMBLING_TYPE = tmp;
@@ -426,7 +426,7 @@ void RADIO_ConfigureChannel(const unsigned int VFO, const unsigned int configure
 
     pVfo->Compander = att.compander;
 
-    #ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
+    #ifdef ENABLE_RESCUE_OPERATIONS
     if(gRemoveOffset)
     {
         pVfo->pTX = &pVfo->freq_config_RX;
@@ -554,7 +554,7 @@ void RADIO_ConfigureSquelchAndOutputPower(VFO_Info_t *pInfo)
 
     PY25Q16_ReadBuffer(0x100D0 + (Band * 16) + (Op * 3), Txp, 3);
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     // make low and mid even lower
     // and use calibration values 
     // be aware with toxic fucking closed firmwares
@@ -686,7 +686,7 @@ void RADIO_SetupRegisters(bool switchToForeground)
 {
     BK4819_FilterBandwidth_t Bandwidth = gRxVfo->CHANNEL_BANDWIDTH;
 
-    #ifdef ENABLE_FEAT_F4HWN_NARROWER
+    #ifdef ENABLE_NARROWER_BW_FILTER
         if(Bandwidth == BK4819_FILTER_BW_NARROW && gSetting_set_nfm == 1)
         {
             Bandwidth = BK4819_FILTER_BW_NARROWER;
@@ -822,7 +822,7 @@ void RADIO_SetupRegisters(bool switchToForeground)
                     break;
             }
 
-#ifndef ENABLE_FEAT_F4HWN
+#ifndef ENABLE_CUSTOM_FIRMWARE_MODS
             if (gRxVfo->SCRAMBLING_TYPE > 0 && gSetting_ScrambleEnable)
                 BK4819_EnableScramble(gRxVfo->SCRAMBLING_TYPE - 1);
             else
@@ -928,7 +928,7 @@ void RADIO_SetTxParameters(void)
 {
     BK4819_FilterBandwidth_t Bandwidth = gCurrentVfo->CHANNEL_BANDWIDTH;
 
-    #ifdef ENABLE_FEAT_F4HWN_NARROWER
+    #ifdef ENABLE_NARROWER_BW_FILTER
         if(Bandwidth == BK4819_FILTER_BW_NARROW && gSetting_set_nfm == 1)
         {
             Bandwidth = BK4819_FILTER_BW_NARROWER;
@@ -1131,7 +1131,7 @@ void RADIO_PrepareTX(void)
 
     RADIO_SelectCurrentVfo();
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
         if(TX_freq_check(gCurrentVfo->pTX->Frequency) != 0 && gCurrentVfo->TX_LOCK == true
     #if defined(ENABLE_ALARM) || defined(ENABLE_TX1750)
             && gAlarmState != ALARM_STATE_SITE_ALARM
@@ -1217,14 +1217,14 @@ void RADIO_PrepareTX(void)
             gTxTimerCountdown_500ms = 120 * 15;  // 15 minutes
         */
 
-#ifdef ENABLE_FEAT_F4HWN 
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS 
         gTxTimerCountdownAlert_500ms = gTxTimerCountdown_500ms;
 #endif
     }
 
     gTxTimeoutReached    = false;
 
-#ifdef ENABLE_FEAT_F4HWN 
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS 
     gTxTimeoutReachedAlert = false;
 #endif
     

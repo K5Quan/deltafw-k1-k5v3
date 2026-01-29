@@ -21,7 +21,7 @@
 #include <stdint.h>
 
 #include "audio.h"     // VOICE_ID_t
-#include "settings.h"
+#include "apps/settings/settings.h"
 
 typedef struct {
     const char  name[7];    // menu display area only has room for 6 characters
@@ -41,11 +41,11 @@ enum
     MENU_OFFSET,
     MENU_TOT,
     MENU_W_N,
-#ifndef ENABLE_FEAT_F4HWN
+#ifndef ENABLE_CUSTOM_FIRMWARE_MODS
     MENU_SCR,
 #endif
     MENU_BCL,
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     MENU_TX_LOCK, 
 #endif
     MENU_MEM_CH,
@@ -106,29 +106,29 @@ enum
 #ifdef ENABLE_AM_FIX
     MENU_AM_FIX,
 #endif
-#ifndef ENABLE_FEAT_F4HWN
+#ifndef ENABLE_CUSTOM_FIRMWARE_MODS
     #ifdef ENABLE_NOAA
         MENU_NOAA_S,
     #endif
 #endif
     MENU_RESET,
     MENU_F_LOCK,
-#ifndef ENABLE_FEAT_F4HWN
+#ifndef ENABLE_CUSTOM_FIRMWARE_MODS
     MENU_200TX,
     MENU_350TX,
     MENU_500TX,
 #endif
     MENU_350EN,
-#ifndef ENABLE_FEAT_F4HWN
+#ifndef ENABLE_CUSTOM_FIRMWARE_MODS
     MENU_SCREN,
 #endif
 #ifdef ENABLE_F_CAL_MENU
     MENU_F_CALI,  // reference xtal calibration
 #endif
-#ifdef ENABLE_FEAT_F4HWN_SLEEP
+#ifdef ENABLE_DEEP_SLEEP_MODE
     MENU_SET_OFF,
 #endif
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     MENU_SET_PWR,
     MENU_SET_PTT,
     MENU_SET_TOT,
@@ -139,13 +139,13 @@ enum
     MENU_SET_MET,
     MENU_SET_GUI,
     MENU_SET_TMR,
-    #ifdef ENABLE_FEAT_F4HWN_NARROWER
+    #ifdef ENABLE_NARROWER_BW_FILTER
         MENU_SET_NFM,
     #endif
-    #ifdef ENABLE_FEAT_F4HWN_VOL
+    #ifdef ENABLE_SYSTEM_INFO_MENU
         MENU_SET_VOL,
     #endif
-    #ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
+    #ifdef ENABLE_RESCUE_OPERATIONS
         MENU_SET_KEY,
     #endif
     #ifdef ENABLE_NOAA
@@ -183,22 +183,22 @@ extern const char* const gSubMenu_MDF[4];
 extern const char        gSubMenu_D_RSP[4][11];
 #endif
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     extern const char    gSubMenu_SET_PWR[7][6];
     extern const char    gSubMenu_SET_PTT[2][8];
     extern const char    gSubMenu_SET_TOT[4][7];
     extern const char    gSubMenu_SET_LCK[2][9];
     extern const char    gSubMenu_SET_MET[2][8];
-    #ifdef ENABLE_FEAT_F4HWN_NARROWER
+    #ifdef ENABLE_NARROWER_BW_FILTER
         extern const char    gSubMenu_SET_NFM[2][9];
     #endif
-    #ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
+    #ifdef ENABLE_RESCUE_OPERATIONS
         extern const char gSubMenu_SET_KEY[][9];
     #endif
 #endif
 
 extern const char* const gSubMenu_PTT_ID[5];
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     extern const char        gSubMenu_PONMSG[5][8];
 #else
     extern const char        gSubMenu_PONMSG[4][8];
@@ -210,7 +210,7 @@ extern const char        gSubMenu_RX_TX[4][6];
 extern const char        gSubMenu_BAT_TXT[8][8];
 extern const char        gSubMenu_BATTYP[5][12];
 
-#ifndef ENABLE_FEAT_F4HWN
+#ifndef ENABLE_CUSTOM_FIRMWARE_MODS
     extern const char        gSubMenu_SCRAMBLER[11][7];
 #endif
 

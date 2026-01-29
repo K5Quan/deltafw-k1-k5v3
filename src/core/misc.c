@@ -16,8 +16,8 @@
 
 #include <string.h>
 
-#include "misc.h"
-#include "settings.h"
+#include "core/misc.h"
+#include "apps/settings/settings.h"
 
 const uint8_t     fm_radio_countdown_500ms         =  2000 / 500;  // 2 seconds
 const uint16_t    fm_play_countdown_scan_10ms      =   100 / 10;   // 100ms
@@ -44,7 +44,7 @@ const uint16_t    key_debounce_10ms                =    20 / 10;   // 20ms
 
 const uint8_t     scan_delay_10ms                  =   210 / 10;   // 210ms
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     const uint16_t    dual_watch_count_after_tx_10ms   =  420;         // 4.2 sec after TX ends
     const uint16_t    dual_watch_count_after_rx_10ms   =  1000 / 10;   // 1 sec after RX ends ?
     const uint16_t    dual_watch_count_after_1_10ms    =  5000 / 10;   // 5 sec
@@ -88,7 +88,7 @@ const uint32_t    gDefaultAesKey[4]                = {0x4AA5CC60, 0x0312CC5F, 0x
 
 const uint8_t     gMicGain_dB2[5]                  = {3, 8, 16, 24, 31};
 
-#ifndef ENABLE_FEAT_F4HWN
+#ifndef ENABLE_CUSTOM_FIRMWARE_MODS
     bool              gSetting_350TX;
 #endif
 
@@ -96,7 +96,7 @@ const uint8_t     gMicGain_dB2[5]                  = {3, 8, 16, 24, 31};
 bool              gSetting_KILLED;
 #endif
 
-#ifndef ENABLE_FEAT_F4HWN
+#ifndef ENABLE_CUSTOM_FIRMWARE_MODS
 bool              gSetting_200TX;
 bool              gSetting_500TX;
 #endif
@@ -110,12 +110,12 @@ enum BacklightOnRxTx_t gSetting_backlight_on_tx_rx;
     bool          gSetting_AM_fix = true;
 #endif
 
-#ifdef ENABLE_FEAT_F4HWN_SLEEP 
+#ifdef ENABLE_DEEP_SLEEP_MODE 
     uint8_t       gSetting_set_off = 1;
     bool          gWakeUp = false;
 #endif
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     uint8_t       gSetting_set_pwr = 1;
     bool          gSetting_set_ptt = 0;
     uint8_t       gSetting_set_tot = 0;
@@ -125,12 +125,12 @@ enum BacklightOnRxTx_t gSetting_backlight_on_tx_rx;
     bool          gSetting_set_lck = false;
     bool          gSetting_set_met = 0;
     bool          gSetting_set_gui = 0;
-    #ifdef ENABLE_FEAT_F4HWN_NARROWER
+    #ifdef ENABLE_NARROWER_BW_FILTER
         bool          gSetting_set_nfm = 0;
     #endif
     bool          gSetting_set_tmr = 0;
     bool          gSetting_set_ptt_session;
-    #ifdef ENABLE_FEAT_F4HWN_DEBUG
+    #ifdef ENABLE_FIRMWARE_DEBUG_LOGGING
         uint8_t       gDebug;
     #endif
     uint8_t       gDW = 0;
@@ -139,7 +139,7 @@ enum BacklightOnRxTx_t gSetting_backlight_on_tx_rx;
     uint8_t       crc[15] = { 0 };
     uint8_t       lErrorsDuringAirCopy = 0;
     uint8_t       gAircopyStep = 0;
-    #ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
+    #ifdef ENABLE_RESCUE_OPERATIONS
         bool          gPowerHigh = false;
         bool          gRemoveOffset = false;
     #endif
@@ -183,14 +183,14 @@ volatile bool     gNextTimeslice_500ms;
 volatile uint16_t gTxTimerCountdown_500ms;
 volatile bool     gTxTimeoutReached;
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     volatile uint16_t gTxTimerCountdownAlert_500ms;
     volatile bool     gTxTimeoutReachedAlert;
     volatile uint16_t gTxTimeoutToneAlert = 800;
-    #ifdef ENABLE_FEAT_F4HWN_RX_TX_TIMER
+    #ifdef ENABLE_RX_TX_TIMER_DISPLAY
         volatile uint16_t gRxTimerCountdown_500ms;
     #endif
-    #ifdef ENABLE_FEAT_F4HWN_SCREENSHOT
+    #ifdef ENABLE_SERIAL_SCREENCAST
          volatile uint8_t  gUART_LockScreenshot = 0; // lock screenshot if Chirp is used
     #endif
 #endif
@@ -310,7 +310,7 @@ volatile uint8_t  boot_counter_10ms;
 uint8_t           gIsLocked = 0xFF;
 
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     bool          gK5startup = true;
     bool          gBackLight = false;
     bool          gMute = false;

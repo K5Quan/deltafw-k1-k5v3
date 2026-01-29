@@ -18,7 +18,7 @@
 #include <string.h>
 
 #ifdef ENABLE_FMRADIO
-    #include "features/fm.h"
+    #include "apps/fm/fm.h"
 #endif
 #include "board.h"
 #include "py32f071_ll_bus.h"
@@ -38,9 +38,9 @@
 #include "drivers/bsp/system.h"
 #include "drivers/bsp/st7565.h"
 #include "frequencies.h"
-#include "helper/battery.h"
-#include "misc.h"
-#include "settings.h"
+#include "apps/battery/battery.h"
+#include "core/misc.h"
+#include "apps/settings/settings.h"
 #if defined(ENABLE_OVERLAY)
     #include "sram-overlay.h"
 #endif

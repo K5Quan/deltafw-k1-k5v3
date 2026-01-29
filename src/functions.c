@@ -18,7 +18,7 @@
 
 #include "features/dtmf.h"
 #if defined(ENABLE_FMRADIO)
-    #include "features/fm.h"
+    #include "apps/fm/fm.h"
 #endif
 #include "audio.h"
 #include "dcs.h"
@@ -32,10 +32,10 @@
 #include "drivers/bsp/st7565.h"
 #include "frequencies.h"
 #include "functions.h"
-#include "helper/battery.h"
-#include "misc.h"
+#include "apps/battery/battery.h"
+#include "core/misc.h"
 #include "radio.h"
-#include "settings.h"
+#include "apps/settings/settings.h"
 #include "ui/status.h"
 #include "ui/ui.h"
 
@@ -117,7 +117,7 @@ void FUNCTION_Foreground(const FUNCTION_Type_t PreviousFunction)
 }
 
 void FUNCTION_PowerSave() {
-    #ifdef ENABLE_FEAT_F4HWN_SLEEP
+    #ifdef ENABLE_DEEP_SLEEP_MODE
         if(gWakeUp)
         {
             gPowerSave_10ms = gEeprom.BATTERY_SAVE * 200; // deep sleep now indexed on BatSav
@@ -225,7 +225,7 @@ void FUNCTION_Transmit()
     }
 #endif
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     BK4819_DisableScramble();
 #else
     if (gCurrentVfo->SCRAMBLING_TYPE > 0 && gSetting_ScrambleEnable)

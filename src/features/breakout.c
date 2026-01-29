@@ -16,7 +16,7 @@
 
 #include "features/breakout.h"
 
-#ifdef ENABLE_FEAT_F4HWN_SCREENSHOT
+#ifdef ENABLE_SERIAL_SCREENCAST
 #include "screenshot.h"
 #endif
 
@@ -484,7 +484,7 @@ void APP_RunBreakout(void) {
                     blockAnim = (blockAnim + 1) % 4;
 
                     // For screenshot
-                    #ifdef ENABLE_FEAT_F4HWN_SCREENSHOT
+                    #ifdef ENABLE_SERIAL_SCREENCAST
                         getScreenShot(false);
                     #endif
                 }

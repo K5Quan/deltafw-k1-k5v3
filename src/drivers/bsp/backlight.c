@@ -22,13 +22,13 @@
 #include "py32f071_ll_tim.h"
 #include "drivers/bsp/gpio.h"
 #include "drivers/bsp/systick.h"
-#include "settings.h"
+#include "apps/settings/settings.h"
 #include "external/printf/printf.h"
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     #include "drivers/bsp/system.h"
     #include "audio.h"
-    #include "misc.h"
+    #include "core/misc.h"
 #endif
 
 #define PWM_FREQ 240
@@ -46,11 +46,11 @@ static uint32_t dutyCycle[DUTY_CYCLE_LEVELS];
 uint16_t gBacklightCountdown_500ms = 0;
 bool backlightOn;
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     const uint8_t value[] = {0, 3, 6, 9, 15, 24, 38, 62, 100, 159, 255};
 #endif
 
-#ifdef ENABLE_FEAT_F4HWN_SLEEP
+#ifdef ENABLE_DEEP_SLEEP_MODE
     uint16_t gSleepModeCountdown_500ms = 0;
 #endif
 
@@ -101,17 +101,17 @@ static void BACKLIGHT_Sound(void)
 
 void BACKLIGHT_TurnOn(void)
 {
-    #ifdef ENABLE_FEAT_F4HWN_SLEEP
+    #ifdef ENABLE_DEEP_SLEEP_MODE
         gSleepModeCountdown_500ms = gSetting_set_off * 120;
     #endif
 
-    #ifdef ENABLE_FEAT_F4HWN
+    #ifdef ENABLE_CUSTOM_FIRMWARE_MODS
         gBacklightBrightnessOld = BACKLIGHT_GetBrightness();
     #endif
 
     if (gEeprom.BACKLIGHT_TIME == 0) {
         BACKLIGHT_TurnOff();
-        #ifdef ENABLE_FEAT_F4HWN
+        #ifdef ENABLE_CUSTOM_FIRMWARE_MODS
             if(gK5startup == true) 
             {
                 BACKLIGHT_Sound();
@@ -122,7 +122,7 @@ void BACKLIGHT_TurnOn(void)
 
     backlightOn = true;
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     if(gK5startup == true) {
         #if defined(ENABLE_FMRADIO) && defined(ENABLE_SPECTRUM)
             BACKLIGHT_SetBrightness(gEeprom.BACKLIGHT_MAX);

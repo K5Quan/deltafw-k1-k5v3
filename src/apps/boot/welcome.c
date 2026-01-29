@@ -19,23 +19,23 @@
 #include "drivers/bsp/py25q16.h"
 #include "drivers/bsp/st7565.h"
 #include "external/printf/printf.h"
-#include "helper/battery.h"
-#include "settings.h"
-#include "misc.h"
+#include "apps/battery/battery.h"
+#include "apps/settings/settings.h"
+#include "core/misc.h"
 #include "ui/helper.h"
-#include "ui/welcome.h"
+#include "apps/boot/welcome.h"
 #include "ui/status.h"
-#include "version.h"
-#include "bitmaps.h"
+#include "core/version.h"
+#include "ui/bitmaps.h"
 
-#ifdef ENABLE_FEAT_F4HWN_SCREENSHOT
+#ifdef ENABLE_SERIAL_SCREENCAST
     #include "screenshot.h"
 #endif
 
 void UI_DisplayReleaseKeys(void)
 {
     memset(gStatusLine,  0, sizeof(gStatusLine));
-#if defined(ENABLE_FEAT_F4HWN_CTR) || defined(ENABLE_FEAT_F4HWN_INV)
+#if defined(ENABLE_LCD_CONTRAST_OPTION) || defined(ENABLE_INVERTED_LCD_MODE)
         ST7565_ContrastAndInv();
 #endif
     UI_DisplayClear();
@@ -56,12 +56,12 @@ void UI_DisplayWelcome(void)
 
     memset(gStatusLine,  0, sizeof(gStatusLine));
 
-#if defined(ENABLE_FEAT_F4HWN_CTR) || defined(ENABLE_FEAT_F4HWN_INV)
+#if defined(ENABLE_LCD_CONTRAST_OPTION) || defined(ENABLE_INVERTED_LCD_MODE)
         ST7565_ContrastAndInv();
 #endif
     UI_DisplayClear();
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     ST7565_BlitStatusLine();
     ST7565_BlitFullScreen();
     
@@ -122,7 +122,7 @@ void UI_DisplayWelcome(void)
         UI_PrintString(WelcomeString0, 0, 127, 0, 10);
         UI_PrintString(WelcomeString1, 0, 127, 2, 10);
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
         UI_PrintStringSmallNormal(Version, 0, 128, 4);
 
         UI_DrawLineBuffer(gFrameBuffer, 0, 31, 127, 31, 1); // Be ware, status zone = 8 lines, the rest = 56 ->total 64
@@ -136,8 +136,8 @@ void UI_DisplayWelcome(void)
         UI_PrintStringSmallNormal(WelcomeString3, 0, 127, 6);
 
         /*
-        #ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
-            #if ENABLE_FEAT_F4HWN_RESCUE_OPS > 1
+        #ifdef ENABLE_RESCUE_OPERATIONS
+            #if ENABLE_RESCUE_OPERATIONS > 1
                 UI_PrintStringSmallNormal(Edition, 18, 0, 6);
                 if(gEeprom.MENU_LOCK == true) {
                     memcpy(gFrameBuffer[6] + 103, BITMAP_Ready, sizeof(BITMAP_Ready));
@@ -150,7 +150,7 @@ void UI_DisplayWelcome(void)
                 UI_PrintStringSmallNormal(Edition, 18, 0, 5);
                 memcpy(gFrameBuffer[5] + 103, BITMAP_Ready, sizeof(BITMAP_Ready));
                 
-                #ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
+                #ifdef ENABLE_RESCUE_OPERATIONS
                     UI_PrintStringSmallNormal("RescueOps", 18, 0, 6);
                     if(gEeprom.MENU_LOCK == true) {
                         memcpy(gFrameBuffer[6] + 103, BITMAP_Ready, sizeof(BITMAP_Ready));
@@ -176,7 +176,7 @@ void UI_DisplayWelcome(void)
                     UI_PrintStringSmallNormal("Bandscope  ", 0, 127, 5);
                     memcpy(gFrameBuffer[5] + 95, BITMAP_Ready, sizeof(BITMAP_Ready));
 
-                    #ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
+                    #ifdef ENABLE_RESCUE_OPERATIONS
                         UI_PrintStringSmallNormal("RescueOps  ", 0, 127, 6);
                         if(gEeprom.MENU_LOCK == true) {
                             memcpy(gFrameBuffer[6] + 95, BITMAP_Ready, sizeof(BITMAP_Ready));
@@ -186,7 +186,7 @@ void UI_DisplayWelcome(void)
                     #endif
             #endif
         #else
-            #ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
+            #ifdef ENABLE_RESCUE_OPERATIONS
                 UI_PrintStringSmallNormal("RescueOps  ", 0, 127, 5);
                 if(gEeprom.MENU_LOCK == true) {
                     memcpy(gFrameBuffer[5] + 95, BITMAP_Ready, sizeof(BITMAP_Ready));
@@ -205,7 +205,7 @@ void UI_DisplayWelcome(void)
         //ST7565_BlitStatusLine();  // blank status line : I think it's useless
         ST7565_BlitFullScreen();
 
-        #ifdef ENABLE_FEAT_F4HWN_SCREENSHOT
+        #ifdef ENABLE_SERIAL_SCREENCAST
             getScreenShot(true);
         #endif
     }

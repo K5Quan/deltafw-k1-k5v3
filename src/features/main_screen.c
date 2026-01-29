@@ -18,20 +18,20 @@
 
 #include "features/action.h"
 #include "features/app.h"
-#include "features/chFrScanner.h"
+#include "apps/scanner/chFrScanner.h"
 #include "features/common.h"
 #ifdef ENABLE_FMRADIO
-    #include "features/fm.h"
+    #include "apps/fm/fm.h"
 #endif
 #include "features/generic.h"
 #include "features/main_screen.h"
-#include "features/scanner.h"
+#include "apps/scanner/scanner.h"
 
 #ifdef ENABLE_SPECTRUM
-#include "features/spectrum.h"
+#include "apps/spectrum/spectrum.h"
 #endif
 
-#ifdef ENABLE_FEAT_F4HWN_GAME
+#ifdef ENABLE_APP_BREAKOUT_GAME
 #include "features/breakout.h"
 #endif
 
@@ -40,9 +40,9 @@
 #include "drivers/bsp/bk4819.h"
 #include "dtmf.h"
 #include "frequencies.h"
-#include "misc.h"
+#include "core/misc.h"
 #include "radio.h"
-#include "settings.h"
+#include "apps/settings/settings.h"
 #include "ui/inputbox.h"
 #include "ui/ui.h"
 #include <stdlib.h>
@@ -88,7 +88,7 @@ static void processFKeyFunction(const KEY_Code_t Key, const bool beep)
 {
     uint8_t Vfo = gEeprom.TX_VFO;
 
-#ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
+#ifdef ENABLE_RESCUE_OPERATIONS
     if(gEeprom.MENU_LOCK == true) {
         if(Key == 2) { // Enable A/B only
             gVfoConfigureMode     = VFO_CONFIGURE;
@@ -189,7 +189,7 @@ static void processFKeyFunction(const KEY_Code_t Key, const bool beep)
             break;
 
         case KEY_2:
-            #ifdef ENABLE_FEAT_F4HWN
+            #ifdef ENABLE_CUSTOM_FIRMWARE_MODS
                 gVfoConfigureMode     = VFO_CONFIGURE;
             #endif
             COMMON_SwitchVFOs();
@@ -198,7 +198,7 @@ static void processFKeyFunction(const KEY_Code_t Key, const bool beep)
             break;
 
         case KEY_3:
-            #ifdef ENABLE_FEAT_F4HWN
+            #ifdef ENABLE_CUSTOM_FIRMWARE_MODS
                 gVfoConfigureMode     = VFO_CONFIGURE;
             #endif
             COMMON_SwitchVFOMode();
@@ -280,7 +280,7 @@ static void processFKeyFunction(const KEY_Code_t Key, const bool beep)
                 gBeepToPlay = BEEP_500HZ_60MS_DOUBLE_BEEP_OPTIONAL;
             break;
 
-#ifdef ENABLE_FEAT_F4HWN // Set Squelch F + UP or Down and Step F + SIDE1 or F + SIDE2
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS // Set Squelch F + UP or Down and Step F + SIDE1 or F + SIDE2
         case KEY_UP:
             gEeprom.SQUELCH_LEVEL = (gEeprom.SQUELCH_LEVEL < 9) ? gEeprom.SQUELCH_LEVEL + 1: 9;
             gVfoConfigureMode     = VFO_CONFIGURE;
@@ -353,7 +353,7 @@ void channelMove(uint16_t Channel)
     //gRequestSaveVFO            = true;
     gVfoConfigureMode          = VFO_CONFIGURE_RELOAD;
 
-#ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
+#ifdef ENABLE_RESCUE_OPERATIONS
     gRemoveOffset = false;
     gPowerHigh = false;
 #endif
@@ -435,7 +435,7 @@ static void MAIN_Key_DIGITS(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
             switch(Key) {
                 case KEY_0...KEY_5:
                     gEeprom.SCAN_LIST_DEFAULT = Key;
-                    #ifdef ENABLE_FEAT_F4HWN_RESUME_STATE
+                    #ifdef ENABLE_BOOT_RESUME_STATE
                         SETTINGS_WriteCurrentState();
                     #endif
                     break;
@@ -586,10 +586,10 @@ static void MAIN_Key_DIGITS(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
         ACTION_BackLight();
         return;
     }
-    #ifdef ENABLE_FEAT_F4HWN_GAME
+    #ifdef ENABLE_APP_BREAKOUT_GAME
     else if(Key == 7)
     {
-        #ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
+        #ifdef ENABLE_RESCUE_OPERATIONS
             if(gEeprom.MENU_LOCK == true) {
                 return;
             }
@@ -672,7 +672,7 @@ static void MAIN_Key_MENU(bool bKeyPressed, bool bKeyHeld)
     if (bKeyHeld) { // menu key held down (long press)
         if (bKeyPressed) { // long press MENU key
 
-            #ifdef ENABLE_FEAT_F4HWN
+            #ifdef ENABLE_CUSTOM_FIRMWARE_MODS
             // Exclude work with list 1, 2, 3 or all list
             if(gScanStateDir != SCAN_OFF)
             {
@@ -720,7 +720,7 @@ static void MAIN_Key_MENU(bool bKeyPressed, bool bKeyHeld)
                 return;
             }
 
-            #ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
+            #ifdef ENABLE_RESCUE_OPERATIONS
             if(gEeprom.MENU_LOCK == false) {
             #endif
 
@@ -730,7 +730,7 @@ static void MAIN_Key_MENU(bool bKeyPressed, bool bKeyHeld)
                 gAnotherVoiceID   = VOICE_ID_MENU;
             #endif
 
-            #ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
+            #ifdef ENABLE_RESCUE_OPERATIONS
             }
             #endif
         }
@@ -743,7 +743,7 @@ static void MAIN_Key_MENU(bool bKeyPressed, bool bKeyHeld)
 static void MAIN_Key_STAR(bool bKeyPressed, bool bKeyHeld)
 {
 
-#ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
+#ifdef ENABLE_RESCUE_OPERATIONS
     if(gEeprom.MENU_LOCK == true) {
         return; // prevent F function if MENU LOCK is true
     }
@@ -763,7 +763,7 @@ static void MAIN_Key_STAR(bool bKeyPressed, bool bKeyHeld)
             return; 
 
         /*
-        #ifdef ENABLE_FEAT_F4HWN_RESUME_STATE
+        #ifdef ENABLE_BOOT_RESUME_STATE
         if(gScanRangeStart == 0) // No ScanRange
         {
             gEeprom.CURRENT_STATE = 1;
@@ -835,7 +835,7 @@ static void MAIN_Key_STAR(bool bKeyPressed, bool bKeyHeld)
 static void MAIN_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 {
 
-#ifdef ENABLE_FEAT_F4HWN // Set Squelch F + UP or Down
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS // Set Squelch F + UP or Down
     if(gWasFKeyPressed) {
         switch(Direction)
         {
@@ -850,7 +850,7 @@ static void MAIN_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
     }
 #endif
 
-#ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
+#ifdef ENABLE_RESCUE_OPERATIONS
     gRemoveOffset = false;
     gPowerHigh = false;
 #endif
@@ -966,7 +966,7 @@ void MAIN_ProcessKeys(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 //  }
 
     switch (Key) {
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
         case KEY_SIDE1:
         case KEY_SIDE2:
 #endif

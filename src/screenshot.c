@@ -17,7 +17,7 @@
 #include "debugging.h"
 #include "drivers/bsp/st7565.h"
 #include "screenshot.h"
-#include "misc.h"
+#include "core/misc.h"
 
 // RAM optimization: Only keep previousFrame static (1024 bytes)
 // Build currentFrame on-the-fly and send delta blocks immediately

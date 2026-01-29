@@ -33,7 +33,7 @@ void ST7565_BlitLine(unsigned line);
 void ST7565_BlitStatusLine(void);
 void ST7565_FillScreen(uint8_t Value);
 void ST7565_Init(void);
-#ifdef ENABLE_FEAT_F4HWN_SLEEP
+#ifdef ENABLE_DEEP_SLEEP_MODE
     void ST7565_ShutDown(void);
 #endif
 void ST7565_FixInterfGlitch(void);
@@ -41,8 +41,8 @@ void ST7565_HardwareReset(void);
 void ST7565_SelectColumnAndLine(uint8_t Column, uint8_t Line);
 void ST7565_WriteByte(uint8_t Value);
 
-#ifdef ENABLE_FEAT_F4HWN
-    #if defined(ENABLE_FEAT_F4HWN_CTR) || defined(ENABLE_FEAT_F4HWN_INV)
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
+    #if defined(ENABLE_LCD_CONTRAST_OPTION) || defined(ENABLE_INVERTED_LCD_MODE)
     void ST7565_ContrastAndInv(void);
     #endif
     //#if !defined(ENABLE_SPECTRUM) || !defined(ENABLE_FMRADIO)

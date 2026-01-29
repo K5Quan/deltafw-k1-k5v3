@@ -22,29 +22,29 @@
 #include "features/action.h"
 
 #ifdef ENABLE_AIRCOPY
-    #include "features/aircopy.h"
+    #include "apps/aircopy/aircopy.h"
 #endif
 #include "features/app.h"
-#include "features/chFrScanner.h"
+#include "apps/scanner/chFrScanner.h"
 #include "features/dtmf.h"
 #ifdef ENABLE_FLASHLIGHT
     #include "features/flashlight.h"
 #endif
 #ifdef ENABLE_FMRADIO
-    #include "features/fm.h"
+    #include "apps/fm/fm.h"
 #endif
 #include "features/generic.h"
 #include "features/main_screen.h"
 #include "features/menu.h"
-#include "features/scanner.h"
+#include "apps/scanner/scanner.h"
 #if defined(ENABLE_UART) || defined(ENABLE_USB)
     #include "features/uart.h"
-    #include "scheduler.h"
+    #include "core/scheduler.h"
 #endif
 #include "py32f0xx.h"
 #include "audio.h"
 #include "board.h"
-#ifdef ENABLE_FEAT_F4HWN_SLEEP
+#ifdef ENABLE_DEEP_SLEEP_MODE
     // #include "bsp/dp32g030/pwmplus.h"
 #endif
 #include "drivers/bsp/backlight.h"
@@ -60,22 +60,22 @@
 #include "external/printf/printf.h"
 #include "frequencies.h"
 #include "functions.h"
-#include "helper/battery.h"
-#include "misc.h"
+#include "apps/battery/battery.h"
+#include "core/misc.h"
 #include "radio.h"
-#include "settings.h"
+#include "apps/settings/settings.h"
 
 #if defined(ENABLE_OVERLAY)
     #include "sram-overlay.h"
 #endif
-#include "ui/battery.h"
+#include "apps/battery/battery_ui.h"
 #include "ui/inputbox.h"
 #include "ui/main.h"
 #include "ui/menu.h"
 #include "ui/status.h"
 #include "ui/ui.h"
 
-#ifdef ENABLE_FEAT_F4HWN_SCREENSHOT
+#ifdef ENABLE_SERIAL_SCREENCAST
     #include "screenshot.h"
 #endif
 
@@ -501,7 +501,7 @@ void APP_StartListening(FUNCTION_Type_t function)
 {
     const unsigned int vfo = gEeprom.RX_VFO;
 
-#ifdef ENABLE_FEAT_F4HWN_RX_TX_TIMER
+#ifdef ENABLE_RX_TX_TIMER_DISPLAY
     gRxTimerCountdown_500ms = 7200;
 #endif
 
@@ -588,7 +588,7 @@ uint32_t APP_SetFreqByStepAndLimits(VFO_Info_t *pInfo, int8_t direction, uint32_
 {
     uint32_t Frequency = FREQUENCY_RoundToStep(pInfo->freq_config_RX.Frequency + (direction * pInfo->StepFrequency), pInfo->StepFrequency);
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     if (Frequency > upper)
 #else
     if (Frequency >= upper)
@@ -776,7 +776,7 @@ static void CheckRadioInterrupts(void)
         if (interrupts.sqlLost) {
             g_SquelchLost = true;
             BK4819_ToggleGpioOut(BK4819_GPIO6_PIN2_GREEN, true);
-            #ifdef ENABLE_FEAT_F4HWN_RX_TX_TIMER
+            #ifdef ENABLE_RX_TX_TIMER_DISPLAY
                 gRxTimerCountdown_500ms = 7200;
             #endif
         }
@@ -906,7 +906,7 @@ void APP_Update(void)
     }
 #endif
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     if (gCurrentFunction == FUNCTION_TRANSMIT && (gTxTimeoutReachedAlert || SerialConfigInProgress()))
     {
         if(gSetting_set_tot >= 2)
@@ -956,7 +956,7 @@ void APP_Update(void)
     {   // transmitter timed out or must de-key
         gTxTimeoutReached = false;
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
         if(gBacklightCountdown_500ms > 0 || gEeprom.BACKLIGHT_TIME == 61)
         {
             //BACKLIGHT_TurnOn();
@@ -981,7 +981,7 @@ void APP_Update(void)
                 //if (gKeyReading1 != KEY_INVALID)
                 //  gPttWasReleased = true;
             }
-            #if defined(ENABLE_FEAT_F4HWN_CTR) || defined(ENABLE_FEAT_F4HWN_INV)
+            #if defined(ENABLE_LCD_CONTRAST_OPTION) || defined(ENABLE_INVERTED_LCD_MODE)
             ST7565_ContrastAndInv();
             #endif
         }
@@ -1132,7 +1132,7 @@ void APP_Update(void)
         {   // dual watch mode off or scanning or rssi update request
             // go back to sleep
 
-#ifdef ENABLE_FEAT_F4HWN_SLEEP
+#ifdef ENABLE_DEEP_SLEEP_MODE
             if(gWakeUp)
             {
                 gPowerSave_10ms = gEeprom.BATTERY_SAVE * 200; // deep sleep now indexed on BatSav
@@ -1181,7 +1181,7 @@ static void CheckKeys(void)
 #endif
 
 // -------------------- PTT ------------------------
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     if (gSetting_set_ptt_session)
     {
         if (GPIO_IsPttPressed() && !SerialConfigInProgress() && gPttOnePushCounter == 0)
@@ -1219,7 +1219,7 @@ static void CheckKeys(void)
                 if (gKeyReading1 != KEY_INVALID)
                     gPttWasReleased = true;
                 gPttOnePushCounter = 0;
-                #if defined(ENABLE_FEAT_F4HWN_CTR) || defined(ENABLE_FEAT_F4HWN_INV)
+                #if defined(ENABLE_LCD_CONTRAST_OPTION) || defined(ENABLE_INVERTED_LCD_MODE)
                 ST7565_ContrastAndInv();
                 #endif
             }
@@ -1241,7 +1241,7 @@ static void CheckKeys(void)
                     gPttIsPressed = false;
                     if (gKeyReading1 != KEY_INVALID)
                         gPttWasReleased = true;
-                    #if defined(ENABLE_FEAT_F4HWN_CTR) || defined(ENABLE_FEAT_F4HWN_INV)
+                    #if defined(ENABLE_LCD_CONTRAST_OPTION) || defined(ENABLE_INVERTED_LCD_MODE)
                     ST7565_ContrastAndInv();
                     #endif
                 }
@@ -1405,7 +1405,7 @@ void APP_TimeSlice10ms(void)
         UI_DisplayStatus();
     }
 
-    #ifdef ENABLE_FEAT_F4HWN_SCREENSHOT
+    #ifdef ENABLE_SERIAL_SCREENCAST
     if (gUpdateDisplayCurrent || gUpdateStatusCurrent) {
         getScreenShot(false);
     }
@@ -1418,7 +1418,7 @@ void APP_TimeSlice10ms(void)
         return;
 #endif
 
-#if !defined(ENABLE_FEAT_F4HWN) || defined(ENABLE_FEAT_F4HWN_RESCUE_OPS)
+#if !defined(ENABLE_CUSTOM_FIRMWARE_MODS) || defined(ENABLE_RESCUE_OPERATIONS)
     #ifdef ENABLE_FLASHLIGHT
         FlashlightTimeSlice();
     #endif
@@ -1616,7 +1616,7 @@ void APP_TimeSlice500ms(void)
         BACKLIGHT_TurnOff();
     }
 
-#ifdef ENABLE_FEAT_F4HWN_SLEEP
+#ifdef ENABLE_DEEP_SLEEP_MODE
     if (gSleepModeCountdown_500ms == gSetting_set_off * 120 && gWakeUp) {
         //ST7565_Init();
         ST7565_FixInterfGlitch();
@@ -1849,7 +1849,7 @@ static void ALARM_Off(void)
 
 static void ProcessKey(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 {
-    #ifdef ENABLE_FEAT_F4HWN_SLEEP
+    #ifdef ENABLE_DEEP_SLEEP_MODE
     if(gWakeUp)
     {
         if(!bKeyPressed || Key == KEY_PTT)
@@ -1958,7 +1958,7 @@ static void ProcessKey(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 
     bool lowBatPopup = gLowBattery && !gLowBatteryConfirmed &&  gScreenToDisplay == DISPLAY_MAIN;
 
-#ifdef ENABLE_FEAT_F4HWN // Disable PTT if KEY_LOCK
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS // Disable PTT if KEY_LOCK
     bool lck_condition = false;
 
     if(gSetting_set_lck)
@@ -2037,7 +2037,7 @@ static void ProcessKey(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
         }
     }
 
-#ifdef ENABLE_FEAT_F4HWN // For F + SIDE1 or F + SIDE2
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS // For F + SIDE1 or F + SIDE2
     if (gWasFKeyPressed && (Key == KEY_PTT || Key == KEY_EXIT)) { 
 #else
     if (gWasFKeyPressed && (Key == KEY_PTT || Key == KEY_EXIT || Key == KEY_SIDE1 || Key == KEY_SIDE2)) { 
@@ -2081,7 +2081,7 @@ static void ProcessKey(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 
                     BK4819_ExitDTMF_TX(false);
 
-#ifndef ENABLE_FEAT_F4HWN
+#ifndef ENABLE_CUSTOM_FIRMWARE_MODS
                     if (gCurrentVfo->SCRAMBLING_TYPE == 0 || !gSetting_ScrambleEnable)
                         BK4819_DisableScramble();
                     else
@@ -2121,7 +2121,7 @@ static void ProcessKey(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
         }
 #endif
     }
-#ifdef ENABLE_FEAT_F4HWN // For F + SIDE1 or F + SIDE2
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS // For F + SIDE1 or F + SIDE2
     else if (gWasFKeyPressed && (Key == KEY_SIDE1 || Key == KEY_SIDE2)) {
         ProcessKeysFunctions[gScreenToDisplay](Key, bKeyPressed, bKeyHeld);
     }

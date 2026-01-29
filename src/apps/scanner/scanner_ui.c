@@ -16,13 +16,13 @@
 
 #include <stdbool.h>
 #include <string.h>
-#include "features/scanner.h"
+#include "apps/scanner/scanner.h"
 #include "dcs.h"
 #include "drivers/bsp/st7565.h"
 #include "external/printf/printf.h"
-#include "misc.h"
+#include "core/misc.h"
 #include "ui/helper.h"
-#include "ui/scanner.h"
+#include "apps/scanner/scanner_ui.h"
 
 void UI_DisplayScanner(void)
 {

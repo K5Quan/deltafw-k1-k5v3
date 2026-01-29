@@ -23,7 +23,7 @@
 #include "drivers/bsp/gpio.h"
 #include "drivers/bsp/st7565.h"
 #include "drivers/bsp/system.h"
-#include "misc.h"
+#include "core/misc.h"
 
 #define SPIx SPI1
 
@@ -124,7 +124,7 @@ void ST7565_DrawLine(const unsigned int Column, const unsigned int Line, const u
 }
 
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     // Optimization
     //
     // ST7565_BlitScreen(0) = ST7565_BlitStatusLine()
@@ -272,7 +272,7 @@ uint8_t cmds[] = {
     ST7565_CMD_DISPLAY_ON_OFF | 1,          // Display ON/OFF: ON
 };
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     static void ST7565_Cmd(uint8_t i)
     {
         switch(i) {
@@ -287,7 +287,7 @@ uint8_t cmds[] = {
         }
     }
 
-    #if defined(ENABLE_FEAT_F4HWN_CTR) || defined(ENABLE_FEAT_F4HWN_INV)
+    #if defined(ENABLE_LCD_CONTRAST_OPTION) || defined(ENABLE_INVERTED_LCD_MODE)
     void ST7565_ContrastAndInv(void)
     {
         CS_Assert();
@@ -334,7 +334,7 @@ void ST7565_Init(void)
 
     for(uint8_t i = 0; i < 8; i++)
     {
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
         ST7565_Cmd(i);
 #else
         ST7565_WriteByte(cmds[i]);
@@ -359,7 +359,7 @@ void ST7565_Init(void)
     ST7565_FillScreen(0x00);
 }
 
-#ifdef ENABLE_FEAT_F4HWN_SLEEP
+#ifdef ENABLE_DEEP_SLEEP_MODE
     void ST7565_ShutDown(void)
     {
         CS_Assert();
@@ -374,7 +374,7 @@ void ST7565_FixInterfGlitch(void)
 {
     CS_Assert();
     for(uint8_t i = 0; i < ARRAY_SIZE(cmds); i++)
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
         ST7565_Cmd(i);
 #else
         ST7565_WriteByte(cmds[i]);

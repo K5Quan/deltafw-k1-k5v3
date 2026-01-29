@@ -18,7 +18,7 @@
 #include "drivers/bsp/gpio.h"
 #include "drivers/bsp/i2c.h"
 #include "drivers/bsp/system.h"
-#include "misc.h"
+#include "core/misc.h"
 
 #ifndef ARRAY_SIZE
     #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
@@ -67,7 +67,7 @@ void BK1080_Init(uint16_t freq, uint8_t band/*, uint8_t space*/)
             BK1080_WriteRegister(BK1080_REG_02_POWER_CONFIGURATION, 0x0201);
         }
 
-        #ifdef ENABLE_FEAT_F4HWN
+        #ifdef ENABLE_CUSTOM_FIRMWARE_MODS
             BK1080_WriteRegister(BK1080_REG_05_SYSTEM_CONFIGURATION2, gMute ? 0x0A10 : 0x0A1F);
         #else
             BK1080_WriteRegister(BK1080_REG_05_SYSTEM_CONFIGURATION2, 0x0A1F);

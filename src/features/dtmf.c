@@ -17,11 +17,11 @@
 #include <string.h>
 #include <stdio.h>   // NULL
 
-#include "features/chFrScanner.h"
+#include "apps/scanner/chFrScanner.h"
 #ifdef ENABLE_FMRADIO
-    #include "features/fm.h"
+    #include "apps/fm/fm.h"
 #endif
-#include "features/scanner.h"
+#include "apps/scanner/scanner.h"
 #include "audio.h"
 #include "drivers/bsp/bk4819.h"
 #include "drivers/bsp/eeprom.h"
@@ -29,8 +29,8 @@
 #include "drivers/bsp/system.h"
 #include "dtmf.h"
 #include "external/printf/printf.h"
-#include "misc.h"
-#include "settings.h"
+#include "core/misc.h"
+#include "apps/settings/settings.h"
 #include "ui/ui.h"
 
 char              gDTMF_String[15];

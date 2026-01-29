@@ -17,12 +17,12 @@
 #include <stddef.h>
 #include <string.h>
 
-#include "bitmaps.h"
+#include "ui/bitmaps.h"
 #include "drivers/bsp/st7565.h"
 #include "functions.h"
-#include "helper/battery.h"
-#include "ui/battery.h"
-#include "../misc.h"
+#include "apps/battery/battery.h"
+#include "apps/battery/battery_ui.h"
+#include "core/misc.h"
 
 void UI_DisplayBattery(uint8_t Level, uint8_t blink) {
     if (Level < 2 && blink == 1) {

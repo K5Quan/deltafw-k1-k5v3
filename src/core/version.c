@@ -5,7 +5,7 @@
     #define VER     ""
 #endif
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     const char Version[]      = AUTHOR_STRING_2 " " VERSION_STRING_2;
     const char Edition[]      = EDITION_STRING;
 #else

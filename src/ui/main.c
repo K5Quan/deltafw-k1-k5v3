@@ -17,34 +17,34 @@
 #include <string.h>
 #include <stdlib.h>  // abs()
 
-#include "features/chFrScanner.h"
+#include "apps/scanner/chFrScanner.h"
 #include "features/dtmf.h"
 #ifdef ENABLE_AM_FIX
     #include "am_fix.h"
 #endif
-#include "bitmaps.h"
+#include "ui/bitmaps.h"
 #include "board.h"
 #include "drivers/bsp/bk4819.h"
 #include "drivers/bsp/st7565.h"
 #include "external/printf/printf.h"
 #include "functions.h"
-#include "helper/battery.h"
-#include "misc.h"
+#include "apps/battery/battery.h"
+#include "core/misc.h"
 #include "radio.h"
-#include "settings.h"
+#include "apps/settings/settings.h"
 #include "ui/helper.h"
 #include "ui/inputbox.h"
 #include "ui/main.h"
 #include "ui/ui.h"
 #include "audio.h"
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     #include "drivers/bsp/system.h"
 #endif
 
 center_line_t center_line = CENTER_LINE_NONE;
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     static int8_t RxBlink;
     static int8_t RxBlinkLed = 0;
     static int8_t RxBlinkLedCounter;
@@ -97,7 +97,7 @@ static void DrawSmallAntennaAndBars(uint8_t *p, unsigned int level)
 
 static void DrawLevelBar(uint8_t xpos, uint8_t line, uint8_t level, uint8_t bars)
 {
-#ifndef ENABLE_FEAT_F4HWN
+#ifndef ENABLE_CUSTOM_FIRMWARE_MODS
     const char hollowBar[] = {
         0b01111111,
         0b01000001,
@@ -110,7 +110,7 @@ static void DrawLevelBar(uint8_t xpos, uint8_t line, uint8_t level, uint8_t bars
     level = MIN(level, bars);
 
     for(uint8_t i = 0; i < level; i++) {
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
         if(gSetting_set_met)
         {
             const char hollowBar[] = {
@@ -182,7 +182,7 @@ void UI_DisplayAudioBar(void)
         if(gLowBattery && !gLowBatteryConfirmed)
             return;
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
         RxBlinkLed = 0;
         RxBlinkLedCounter = 0;
         BK4819_ToggleGpioOut(BK4819_GPIO6_PIN2_GREEN, false);
@@ -245,7 +245,7 @@ void DisplayRSSIBar(const bool now)
     const unsigned int txt_width    = 7 * 8;                 // 8 text chars
     const unsigned int bar_x        = 2 + txt_width + 4;     // X coord of bar graph
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     /*
     const char empty[] = {
         0b00000000,
@@ -292,7 +292,7 @@ void DisplayRSSIBar(const bool now)
     uint8_t           *p_line        = gFrameBuffer[line];
     char               str[16];
 
-#ifndef ENABLE_FEAT_F4HWN
+#ifndef ENABLE_CUSTOM_FIRMWARE_MODS
     const char plus[] = {
         0b00011000,
         0b00011000,
@@ -318,7 +318,7 @@ void DisplayRSSIBar(const bool now)
     if (now)
         memset(p_line, 0, LCD_WIDTH);
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     int16_t rssi_dBm =
         BK4819_GetRSSI_dBm()
 #ifdef ENABLE_AM_FIX
@@ -358,7 +358,7 @@ void DisplayRSSIBar(const bool now)
     uint8_t overS9Bars = MIN(overS9dBm/10, 4);
 #endif
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     if (gSetting_set_gui)
     {
         sprintf(str, "%3d", -rssi_dBm);
@@ -471,7 +471,7 @@ void UI_MAIN_TimeSlice500ms(void)
         if(FUNCTION_IsRx()) {
             DisplayRSSIBar(true);
         }
-#ifdef ENABLE_FEAT_F4HWN // Blink Green Led for white...
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS // Blink Green Led for white...
         else if(gSetting_set_eot > 0 && RxBlinkLed == 2)
         {
             if(RxBlinkLedCounter <= 8)
@@ -540,7 +540,7 @@ void UI_DisplayMain(void)
         return;
     }
 
-#ifndef ENABLE_FEAT_F4HWN
+#ifndef ENABLE_CUSTOM_FIRMWARE_MODS
     if (gEeprom.KEY_LOCK && gKeypadLocked > 0)
     {   // tell user how to unlock the keyboard
         UI_PrintString("Long press #", 0, LCD_WIDTH, 1, 8);
@@ -581,7 +581,7 @@ void UI_DisplayMain(void)
 
     for (unsigned int vfo_num = 0; vfo_num < 2; vfo_num++)
     {
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
         const unsigned int line0 = 0;  // text screen line
         const unsigned int line1 = 4;
         unsigned int line;
@@ -607,7 +607,7 @@ void UI_DisplayMain(void)
         enum Vfo_txtr_mode mode       = VFO_MODE_NONE;
 #endif
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     if (isMainOnly())
     {
         if (activeTxVFO != vfo_num)
@@ -617,7 +617,7 @@ void UI_DisplayMain(void)
     }
 #endif
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
         if (activeTxVFO != vfo_num || isMainOnly())
 #else
         if (activeTxVFO != vfo_num) // this is not active TX VFO
@@ -626,7 +626,7 @@ void UI_DisplayMain(void)
 #ifdef ENABLE_SCAN_RANGES
             if(gScanRangeStart) {
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
                 //if(IS_FREQ_CHANNEL(gEeprom.ScreenChannel[0]) && IS_FREQ_CHANNEL(gEeprom.ScreenChannel[1])) {
                 if(IS_FREQ_CHANNEL(gEeprom.ScreenChannel[activeTxVFO])) {
 
@@ -701,7 +701,7 @@ void UI_DisplayMain(void)
                     pPrintStr = String;
                 }
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
                 if (isMainOnly())
                 {
                     UI_PrintString(pPrintStr, 2, 0, 5, 8);
@@ -765,7 +765,7 @@ void UI_DisplayMain(void)
             mode = VFO_MODE_RX;
             //if (FUNCTION_IsRx() && gEeprom.RX_VFO == vfo_num) {
             if (FUNCTION_IsRx() && gEeprom.RX_VFO == vfo_num && VfoState[vfo_num] == VFO_STATE_NORMAL) {
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
                 RxBlinkLed = 1;
                 RxBlinkLedCounter = 0;
                 RxLine = line;
@@ -782,7 +782,7 @@ void UI_DisplayMain(void)
                 UI_PrintStringSmallBold("RX", 8, 0, line);
 #endif
             }
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
             else
             {
                 if(RxOnVfofrequency == frequency && !isMainOnly())
@@ -878,7 +878,7 @@ void UI_DisplayMain(void)
             if (IS_MR_CHANNEL(gEeprom.ScreenChannel[vfo_num]))
             {   // it's a channel
 
-                #ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
+                #ifdef ENABLE_RESCUE_OPERATIONS
                     if(gEeprom.MENU_LOCK == false) {
                 #endif
                 uint8_t countList = 0;
@@ -920,7 +920,7 @@ void UI_DisplayMain(void)
                     memcpy(p_line0 + 127 - (1 * 6), BITMAP_ScanListE, sizeof(BITMAP_ScanListE));
                 }
 
-                #ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
+                #ifdef ENABLE_RESCUE_OPERATIONS
                 {
                     }
                 }
@@ -973,7 +973,7 @@ void UI_DisplayMain(void)
                             UI_PrintString(String, 32, 0, line, 8);
                         }
                         else {
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
                             if (isMainOnly())
                             {
                                 UI_PrintString(String, 32, 0, line, 8);
@@ -992,7 +992,7 @@ void UI_DisplayMain(void)
                             UI_PrintStringSmallBold(String, 32 + 4, 0, line);
 #endif
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
                             if (isMainOnly())
                             {
                                 sprintf(String, "%3u.%05u", frequency / 100000, frequency % 100000);
@@ -1102,7 +1102,7 @@ void UI_DisplayMain(void)
 
         // show the modulation symbol
         const char * s = "";
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
         const char * t = "";
 #endif
         const ModulationMode_t mod = vfoInfo->Modulation;
@@ -1110,14 +1110,14 @@ void UI_DisplayMain(void)
             case MODULATION_FM: {
                 const FREQ_Config_t *pConfig = (mode == VFO_MODE_TX) ? vfoInfo->pTX : vfoInfo->pRX;
                 const unsigned int code_type = pConfig->CodeType;
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
                 const char *code_list[] = {"", "CT", "DC", "DC"};
 #else
                 const char *code_list[] = {"", "CT", "DCS", "DCR"};
 #endif
                 if (code_type < ARRAY_SIZE(code_list))
                     s = code_list[code_type];
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
                 if(gCurrentFunction != FUNCTION_TRANSMIT || activeTxVFO != vfo_num)
                     t = gModulationStr[mod];
 #endif
@@ -1128,7 +1128,7 @@ void UI_DisplayMain(void)
             break;
         }
 
-#if ENABLE_FEAT_F4HWN
+#if ENABLE_CUSTOM_FIRMWARE_MODS
         const FREQ_Config_t *pConfig = (mode == VFO_MODE_TX) ? vfoInfo->pTX : vfoInfo->pRX;
         int8_t shift = 0;
 
@@ -1237,7 +1237,7 @@ void UI_DisplayMain(void)
         {   // show the TX offset symbol
             int i = vfoInfo->TX_OFFSET_FREQUENCY_DIRECTION % 3;
 
-            #ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
+            #ifdef ENABLE_RESCUE_OPERATIONS
                 const char dir_list[][2] = {"", "+", "-", "D"};
 
                 if(gTxVfo->TX_OFFSET_FREQUENCY_DIRECTION != 0 && gTxVfo->pTX == &gTxVfo->freq_config_RX && !vfoInfo->FrequencyReverse)
@@ -1248,14 +1248,14 @@ void UI_DisplayMain(void)
                 const char dir_list[][2] = {"", "+", "-"};
             #endif
 
-#if ENABLE_FEAT_F4HWN
+#if ENABLE_CUSTOM_FIRMWARE_MODS
         if (gSetting_set_gui)
         {
             UI_PrintStringSmallNormal(dir_list[i], LCD_WIDTH + 60, 0, line + 1);
         }
         else
         {
-            #ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
+            #ifdef ENABLE_RESCUE_OPERATIONS
             if(i == 3)
             {
                 UI_PrintStringSmallest(dir_list[i], 43, line == 0 ? 17 : 49, false, true);
@@ -1264,7 +1264,7 @@ void UI_DisplayMain(void)
             {
             #endif
             UI_PrintStringSmallNormal(dir_list[i], LCD_WIDTH + 41, 0, line + 1);
-            #ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
+            #ifdef ENABLE_RESCUE_OPERATIONS
             }
             #endif
         }
@@ -1275,7 +1275,7 @@ void UI_DisplayMain(void)
 
         // show the TX/RX reverse symbol
         if (vfoInfo->FrequencyReverse)
-#if ENABLE_FEAT_F4HWN
+#if ENABLE_CUSTOM_FIRMWARE_MODS
         {
             if (gSetting_set_gui)
             {
@@ -1290,8 +1290,8 @@ void UI_DisplayMain(void)
             UI_PrintStringSmallNormal("R", LCD_WIDTH + 62, 0, line + 1);
 #endif
 
-#if ENABLE_FEAT_F4HWN
-        #ifdef ENABLE_FEAT_F4HWN_NARROWER
+#if ENABLE_CUSTOM_FIRMWARE_MODS
+        #ifdef ENABLE_NARROWER_BW_FILTER
             bool narrower = 0;
 
             if(vfoInfo->CHANNEL_BANDWIDTH == BANDWIDTH_NARROW && gSetting_set_nfm == 1)
@@ -1332,13 +1332,13 @@ void UI_DisplayMain(void)
             UI_PrintStringSmallNormal("DTMF", LCD_WIDTH + 78, 0, line + 1);
 #endif
 
-#ifndef ENABLE_FEAT_F4HWN
+#ifndef ENABLE_CUSTOM_FIRMWARE_MODS
         // show the audio scramble symbol
         if (vfoInfo->SCRAMBLING_TYPE > 0 && gSetting_ScrambleEnable)
             UI_PrintStringSmallNormal("SCR", LCD_WIDTH + 106, 0, line + 1);
 #endif
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
         /*
         if(isMainVFO)   
         {
@@ -1441,7 +1441,7 @@ void UI_DisplayMain(void)
                     center_line = CENTER_LINE_DTMF_DEC;
 
                     sprintf(String, "DTMF %s", gDTMF_RX_live + idx);
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
                     if (isMainOnly())
                     {
                         UI_PrintStringSmallNormal(String, 2, 0, 5);
@@ -1493,8 +1493,8 @@ void UI_DisplayMain(void)
         }
     }
 
-#ifdef ENABLE_FEAT_F4HWN
-    //#ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
+    //#ifdef ENABLE_RESCUE_OPERATIONS
     //if(gEeprom.MENU_LOCK == false)
     //{
     //#endif
@@ -1507,7 +1507,7 @@ void UI_DisplayMain(void)
             gFrameBuffer[6][i] ^= 0x7F;
         }
     }
-    //#ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
+    //#ifdef ENABLE_RESCUE_OPERATIONS
     //}
     //#endif
 #endif

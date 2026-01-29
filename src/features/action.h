@@ -35,7 +35,7 @@ void ACTION_SwitchDemodul(void);
     void ACTION_BlminTmpOff(void);
 #endif
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     void ACTION_RxMode(void);
     void ACTION_MainOnly(void);
     void ACTION_Ptt(void);
@@ -45,7 +45,7 @@ void ACTION_SwitchDemodul(void);
     //#if !defined(ENABLE_SPECTRUM) || !defined(ENABLE_FMRADIO)
     void ACTION_Mute(void);
     //#endif
-    #ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
+    #ifdef ENABLE_RESCUE_OPERATIONS
         void ACTION_Power_High(void);
         void ACTION_Remove_Offset(void);
     #endif

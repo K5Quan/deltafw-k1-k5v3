@@ -17,16 +17,16 @@
 #include <string.h>
 
 #ifdef ENABLE_AIRCOPY
-    #include "features/aircopy.h"
+    #include "apps/aircopy/aircopy.h"
 #endif
 #include "drivers/bsp/bk4819.h"
 #include "drivers/bsp/keyboard.h"
 #include "drivers/bsp/gpio.h"
 #include "drivers/bsp/system.h"
-#include "helper/boot.h"
-#include "misc.h"
+#include "apps/boot/boot.h"
+#include "core/misc.h"
 #include "radio.h"
-#include "settings.h"
+#include "apps/settings/settings.h"
 #include "ui/menu.h"
 #include "ui/ui.h"
 
@@ -43,7 +43,7 @@ BOOT_Mode_t BOOT_GetMode(void)
         SYSTEM_DelayMs(20);
     }
 
-    #ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
+    #ifdef ENABLE_RESCUE_OPERATIONS
     if (Keys[0] == (10 + gEeprom.SET_KEY))
     {
         return BOOT_MODE_RESCUE_OPS;  // Secret KEY pressed
@@ -73,7 +73,7 @@ void BOOT_ProcessMode(BOOT_Mode_t Mode)
 {
     if (Mode == BOOT_MODE_F_LOCK)
     {
-        #ifdef ENABLE_FEAT_F4HWN_RESUME_STATE
+        #ifdef ENABLE_BOOT_RESUME_STATE
             gEeprom.CURRENT_STATE = 0; // Don't resume is active...
         #endif 
         GUI_SelectNextDisplay(DISPLAY_MENU);
@@ -113,7 +113,7 @@ void BOOT_ProcessMode(BOOT_Mode_t Mode)
             gEeprom.BACKLIGHT_TIME = 61;
             gEeprom.KEY_LOCK = 0;
 
-            #ifdef ENABLE_FEAT_F4HWN_RESUME_STATE
+            #ifdef ENABLE_BOOT_RESUME_STATE
                 gEeprom.CURRENT_STATE = 0; // Don't resume is active...
             #endif 
 

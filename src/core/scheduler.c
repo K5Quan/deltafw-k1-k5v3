@@ -14,17 +14,17 @@
  *     limitations under the License.
  */
 
-#include "scheduler.h"
-#include "features/chFrScanner.h"
+#include "core/scheduler.h"
+#include "apps/scanner/chFrScanner.h"
 #ifdef ENABLE_FMRADIO
-    #include "features/fm.h"
+    #include "apps/fm/fm.h"
 #endif
-#include "features/scanner.h"
+#include "apps/scanner/scanner.h"
 #include "audio.h"
 #include "functions.h"
-#include "helper/battery.h"
-#include "misc.h"
-#include "settings.h"
+#include "apps/battery/battery.h"
+#include "core/misc.h"
+#include "apps/settings/settings.h"
 
 #include "drivers/bsp/backlight.h"
 #include "drivers/bsp/gpio.h"
@@ -54,9 +54,9 @@ void SysTick_Handler(void)
     if ((gGlobalSysTickCounter % 50) == 0) {
         gNextTimeslice_500ms = true;
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
         DECREMENT_AND_TRIGGER(gTxTimerCountdownAlert_500ms - ALERT_TOT * 2, gTxTimeoutReachedAlert);
-        #ifdef ENABLE_FEAT_F4HWN_RX_TX_TIMER
+        #ifdef ENABLE_RX_TX_TIMER_DISPLAY
             DECREMENT(gRxTimerCountdown_500ms);
         #endif
 #endif

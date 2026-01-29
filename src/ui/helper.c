@@ -18,10 +18,10 @@
 
 #include "drivers/bsp/st7565.h"
 #include "external/printf/printf.h"
-#include "font.h"
+#include "ui/font.h"
 #include "ui/helper.h"
 #include "ui/inputbox.h"
-#include "misc.h"
+#include "core/misc.h"
 
 #ifndef ARRAY_SIZE
     #define ARRAY_SIZE(arr) (sizeof(arr)/sizeof((arr)[0]))
@@ -239,7 +239,7 @@ static void sort(int16_t *a, int16_t *b)
     }
 }
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     /*
     void UI_DrawLineDottedBuffer(uint8_t (*buffer)[128], int16_t x1, int16_t y1, int16_t x2, int16_t y2, bool black)
     {

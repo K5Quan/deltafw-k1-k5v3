@@ -21,12 +21,12 @@
 #include <stdint.h>
 
 #include "frequencies.h"
-#include <helper/battery.h>
+#include <apps/battery/battery.h>
 #include "radio.h"
 #include <drivers/bsp/backlight.h>
 
 enum POWER_OnDisplayMode_t {
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     POWER_ON_DISPLAY_MODE_ALL,
     POWER_ON_DISPLAY_MODE_SOUND,
 #else
@@ -41,17 +41,17 @@ typedef enum POWER_OnDisplayMode_t POWER_OnDisplayMode_t;
 enum TxLockModes_t {
     F_LOCK_DEF, //all default frequencies + configurable
     F_LOCK_FCC,
-#ifdef ENABLE_FEAT_F4HWN_CA
+#ifdef ENABLE_FREQUENCY_LOCK_REGION_CA
     F_LOCK_CA,
 #endif
     F_LOCK_CE,
     F_LOCK_GB,
     F_LOCK_430,
     F_LOCK_438,
-#ifdef ENABLE_FEAT_F4HWN_PMR
+#ifdef ENABLE_PMR446_FREQUENCY_BAND
     F_LOCK_PMR,
 #endif
-#ifdef ENABLE_FEAT_F4HWN_GMRS_FRS_MURS
+#ifdef ENABLE_GMRS_FRS_MURS_BANDS
     F_LOCK_GMRS_FRS_MURS,
 #endif
     F_LOCK_ALL, // disable TX on all frequencies
@@ -111,14 +111,14 @@ enum ACTION_OPT_t {
     ACTION_OPT_VFO_MR,
     ACTION_OPT_SWITCH_DEMODUL,
     ACTION_OPT_BLMIN_TMP_OFF, //BackLight Minimum Temporay OFF
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     ACTION_OPT_RXMODE,
     ACTION_OPT_MAINONLY,
     ACTION_OPT_PTT,
     ACTION_OPT_WN,
     ACTION_OPT_BACKLIGHT,
     ACTION_OPT_MUTE,
-    #ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
+    #ifdef ENABLE_RESCUE_OPERATIONS
         ACTION_OPT_POWER_HIGH,
         ACTION_OPT_REMOVE_OFFSET,
     #endif
@@ -192,10 +192,10 @@ typedef struct {
     uint8_t               SQUELCH_LEVEL;
     uint8_t               TX_TIMEOUT_TIMER;
     bool                  KEY_LOCK;
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     bool                  KEY_LOCK_PTT;
 #endif
-#ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
+#ifdef ENABLE_RESCUE_OPERATIONS
     bool                  MENU_LOCK;
     uint8_t               SET_KEY;
 #endif
@@ -217,7 +217,7 @@ typedef struct {
     bool                  SCAN_LIST_ENABLED[3];
     uint8_t               SCANLIST_PRIORITY_CH1[3];
     uint8_t               SCANLIST_PRIORITY_CH2[3];
-//#ifdef ENABLE_FEAT_F4HWN_RESUME_STATE // Fix me !!! What the hell is this?
+//#ifdef ENABLE_BOOT_RESUME_STATE // Fix me !!! What the hell is this?
     uint8_t               CURRENT_STATE;
     uint8_t               CURRENT_LIST;
 //#endif                                // Fix me !!! What the hell is this?
@@ -277,7 +277,7 @@ typedef struct {
     bool              NOAA_AUTO_SCAN;
 #endif
     uint8_t               VOLUME_GAIN;
-    #ifdef ENABLE_FEAT_F4HWN
+    #ifdef ENABLE_CUSTOM_FIRMWARE_MODS
         uint8_t           VOLUME_GAIN_BACKUP;
     #endif
     uint8_t               DAC_GAIN;
@@ -321,13 +321,13 @@ void SETTINGS_SaveChannel(uint8_t Channel, uint8_t VFO, const VFO_Info_t *pVFO, 
 void SETTINGS_SaveBatteryCalibration(const uint16_t * batteryCalibration);
 void SETTINGS_UpdateChannel(uint8_t channel, const VFO_Info_t *pVFO, bool keep, bool check, bool save);
 void SETTINGS_WriteBuildOptions(void);
-#ifdef ENABLE_FEAT_F4HWN_RESUME_STATE
+#ifdef ENABLE_BOOT_RESUME_STATE
     void SETTINGS_WriteCurrentState(void);
 #endif
-#ifdef ENABLE_FEAT_F4HWN_VOL
+#ifdef ENABLE_SYSTEM_INFO_MENU
     void SETTINGS_WriteCurrentVol(void);
 #endif
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     void SETTINGS_ResetTxLock(void);
 #endif
 #endif

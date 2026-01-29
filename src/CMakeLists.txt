@@ -18,32 +18,33 @@ add_subdirectory(middlewares)
 # ----------------------------------------------------------------------------
 target_sources(App INTERFACE
     # Main Entry
-    main.c
+    core/main.c
     
-    # Root source files (formerly App/*)
+    # Core
+    core/init.c
+    core/misc.c
+    core/scheduler.c
+    core/version.c
     board.c
-    misc.c
-    scheduler.c
-    "version.c"
     audio.c
     radio.c
     frequencies.c
     dcs.c
-    settings.c
+    apps/settings/settings.c
     functions.c
-    bitmaps.c
-    font.c
+    ui/bitmaps.c
+    ui/font.c
 
     # Features (formerly App/app)
     features/action.c
     features/app.c
-    features/chFrScanner.c
+    apps/scanner/chFrScanner.c
     features/common.c
     features/dtmf.c
     features/generic.c
     features/main_screen.c
     features/menu.c
-    features/scanner.c
+    apps/scanner/scanner.c
 
     # Drivers BSP (formerly App/driver)
     drivers/bsp/backlight.c
@@ -56,20 +57,24 @@ target_sources(App INTERFACE
     drivers/bsp/system.c
     drivers/bsp/systick.c
 
+    # Apps
+    apps/battery/battery.c
+    apps/battery/battery_ui.c
+
     # Helpers
-    helper/battery.c
-    helper/boot.c
+    # helper/battery.c MOVED
+    apps/boot/boot.c
 
     # UI
-    ui/battery.c
+    # ui/battery.c MOVED
     ui/helper.c
     ui/inputbox.c
     ui/main.c
     ui/menu.c
-    ui/scanner.c
+    apps/scanner/scanner_ui.c
     ui/status.c
     ui/ui.c
-    ui/welcome.c
+    apps/boot/welcome.c
 
     # Third Party
     external/printf/printf.c
@@ -90,7 +95,7 @@ endmacro()
 # ----------------------------------------------------------------------------
 # Configuration & Definitions
 # ----------------------------------------------------------------------------
-if(ENABLE_FEAT_F4HWN)
+if(ENABLE_CUSTOM_FIRMWARE_MODS)
     target_compile_definitions(App INTERFACE
         "AUTHOR_STRING_1=\"${AUTHOR_STRING_1}\""
         "AUTHOR_STRING_2=\"${AUTHOR_STRING_2}\""
@@ -148,8 +153,8 @@ endif()
 # ----------------------------------------------------------------------------
 # Stock Quansheng Features
 # ----------------------------------------------------------------------------
-enable_feature(ENABLE_FMRADIO           drivers/bsp/bk1080.c features/fm.c ui/fmradio.c)
-enable_feature(ENABLE_AIRCOPY           features/aircopy.c ui/aircopy.c)
+enable_feature(ENABLE_FMRADIO           drivers/bsp/bk1080.c apps/fm/fm.c apps/fm/fm_ui.c)
+enable_feature(ENABLE_AIRCOPY           apps/aircopy/aircopy.c apps/aircopy/aircopy_ui.c)
 enable_feature(ENABLE_VOICE             drivers/bsp/voice.c)
 enable_feature(ENABLE_PWRON_PASSWORD    ui/lock.c)
 enable_feature(ENABLE_FLASHLIGHT        features/flashlight.c)
@@ -164,7 +169,7 @@ enable_feature(ENABLE_DTMF_CALLING)
 # ----------------------------------------------------------------------------
 # Custom Mods
 # ----------------------------------------------------------------------------
-enable_feature(ENABLE_SPECTRUM          features/spectrum.c)
+enable_feature(ENABLE_SPECTRUM          apps/spectrum/spectrum.c)
 enable_feature(ENABLE_AM_FIX            am_fix.c)
 
 enable_feature(ENABLE_BIG_FREQ)
@@ -201,25 +206,25 @@ enable_feature(ENABLE_EXTRA_UART_CMD)               # @reppad
 # ----------------------------------------------------------------------------
 # F4HWN Mods
 # ----------------------------------------------------------------------------
-enable_feature(ENABLE_FEAT_F4HWN)
-enable_feature(ENABLE_FEAT_F4HWN_GAME           features/breakout.c)
-enable_feature(ENABLE_FEAT_F4HWN_SCREENSHOT     screenshot.c)
+enable_feature(ENABLE_CUSTOM_FIRMWARE_MODS)
+enable_feature(ENABLE_APP_BREAKOUT_GAME           features/breakout.c)
+enable_feature(ENABLE_SERIAL_SCREENCAST     screenshot.c)
 
-enable_feature(ENABLE_FEAT_F4HWN_SPECTRUM)
-enable_feature(ENABLE_FEAT_F4HWN_RX_TX_TIMER)
-enable_feature(ENABLE_FEAT_F4HWN_CHARGING_C)
-enable_feature(ENABLE_FEAT_F4HWN_SLEEP)
-enable_feature(ENABLE_FEAT_F4HWN_RESUME_STATE)
-enable_feature(ENABLE_FEAT_F4HWN_NARROWER)
-enable_feature(ENABLE_FEAT_F4HWN_INV)
-enable_feature(ENABLE_FEAT_F4HWN_CTR)
-enable_feature(ENABLE_FEAT_F4HWN_RESCUE_OPS)
-enable_feature(ENABLE_FEAT_F4HWN_VOL)
-enable_feature(ENABLE_FEAT_F4HWN_RESET_CHANNEL)
-enable_feature(ENABLE_FEAT_F4HWN_PMR)
-enable_feature(ENABLE_FEAT_F4HWN_GMRS_FRS_MURS)
-enable_feature(ENABLE_FEAT_F4HWN_CA)
-enable_feature(ENABLE_FEAT_F4HWN_DEBUG)
+enable_feature(ENABLE_SPECTRUM_EXTENSIONS)
+enable_feature(ENABLE_RX_TX_TIMER_DISPLAY)
+enable_feature(ENABLE_USBC_CHARGING_INDICATOR)
+enable_feature(ENABLE_DEEP_SLEEP_MODE)
+enable_feature(ENABLE_BOOT_RESUME_STATE)
+enable_feature(ENABLE_NARROWER_BW_FILTER)
+enable_feature(ENABLE_INVERTED_LCD_MODE)
+enable_feature(ENABLE_LCD_CONTRAST_OPTION)
+enable_feature(ENABLE_RESCUE_OPERATIONS)
+enable_feature(ENABLE_SYSTEM_INFO_MENU)
+enable_feature(ENABLE_RESET_CHANNEL_FUNCTION)
+enable_feature(ENABLE_PMR446_FREQUENCY_BAND)
+enable_feature(ENABLE_GMRS_FRS_MURS_BANDS)
+enable_feature(ENABLE_FREQUENCY_LOCK_REGION_CA)
+enable_feature(ENABLE_FIRMWARE_DEBUG_LOGGING)
 
 
 # ----------------------------------------------------------------------------

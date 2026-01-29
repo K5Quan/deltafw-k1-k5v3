@@ -3,7 +3,7 @@
 #define APP_COMMON_H
 
 #include "functions.h"
-#include "settings.h"
+#include "apps/settings/settings.h"
 #include "ui/ui.h"
 
 void COMMON_KeypadLockToggle();
