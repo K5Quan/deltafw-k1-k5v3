@@ -981,18 +981,18 @@ static void DrawStatus()
     // sprintf(String, "%d %d", voltage, perc);
     // UI_PrintStringSmallest(String, 48, 1, true, true);
 
-    gStatusLine[116] = 0b00011100;
-    gStatusLine[117] = 0b00111110;
+    gStatusLine[116] = 0b00001110;
+    gStatusLine[117] = 0b00011111;
     for (int i = 118; i <= 126; i++)
     {
-        gStatusLine[i] = 0b00100010;
+        gStatusLine[i] = 0b00010001;
     }
 
     for (unsigned i = 127; i >= 118; i--)
     {
         if (127 - i <= (perc + 5) * 9 / 100)
         {
-            gStatusLine[i] = 0b00111110;
+            gStatusLine[i] = 0b00011111;
         }
     }
     
@@ -1027,13 +1027,19 @@ static void ShowChannelName(uint32_t f)
             }
         }
         if (channelName[0] != 0) {
-            UI_PrintStringSmallBufferNormal(channelName, gStatusLine + 36);
+            UI_PrintStringSmallBufferNormal(channelName, gStatusLine + 36 + 3);
         }
     }
     else
     {
-        memset(&gStatusLine[36], 0, 100 - 28);
+        memset(&gStatusLine[36 + 3], 0, 100 - 28);
     }
+
+    // REDRAW SEPARATOR LINE (bit 6) for the modified area
+    for (int i = 36 + 3; i < 36 + 3 + (100 - 28); i++) {
+        gStatusLine[i] |= (1 << 6);
+    }
+
     ST7565_BlitStatusLine();
 }
 #endif
@@ -1041,12 +1047,19 @@ static void ShowChannelName(uint32_t f)
 static void DrawF(uint32_t f)
 {
     sprintf(String, "%u.%05u", f / 100000, f % 100000);
-    UI_PrintStringSmallNormal(String, 8, 127, 0);
+    // Center logic: Screen 128px. Font width 7 chars (SmallNormal) from ui.c line 116 using gFontSmall?
+    // ui/helper.c:116 uses gFontSmall[0]. gFontSmall is usually 6 or 7 pixels wide.
+    // UI_PrintStringSmallNormal in ui/helper.c calls UI_PrintStringSmall with ARRAY_SIZE(gFontSmall[0]).
+    // Assuming 7 pixels per char approximately (or 6+1 spacing).
+    // Let's use the provided UI_PrintStringSmallNormal which takes Start, End, Line.
+    // Specifying Start=0, End=127 centers the string automatically in that function if End > Start.
+    UI_PrintStringSmallNormal(String, 0, 127, 0);
 
     sprintf(String, "%3s", gModulationStr[settings.modulationType]);
     UI_PrintStringSmallest(String, 116, 1, false, true);
     sprintf(String, "%4sk", bwOptions[settings.listenBw]);
     UI_PrintStringSmallest(String, 108, 7, false, true);
+    
 
 #ifdef ENABLE_SPECTRUM_EXTENSIONS
     ShowChannelName(f);

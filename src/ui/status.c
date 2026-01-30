@@ -33,6 +33,7 @@
 #include "ui/helper.h"
 #include "ui/ui.h"
 #include "ui/status.h"
+#include "ui/ag_menu.h"
 
 #ifdef ENABLE_RX_TX_TIMER_DISPLAY
 #ifndef ENABLE_FIRMWARE_DEBUG_LOGGING
@@ -59,9 +60,12 @@ void UI_DisplayStatus() {
     gUpdateStatus = false;
     memset(gStatusLine, 0, sizeof(gStatusLine));
 
-    char str[20] = "";
+    char str[42] = "";
     char *p = str;
 
+    if (AG_MENU_IsActive()) {
+        AG_MENU_GetPath(str, sizeof(str));
+    } else {
 #ifdef ENABLE_NOAA
     if (!(gScanStateDir != SCAN_OFF || SCANNER_IsScanning()) && gIsNoaaMode) { // NOAA SCAN indicator
         *p++ = 'N';
@@ -70,7 +74,7 @@ void UI_DisplayStatus() {
         *p++ = 'A';
         *p++ = ' ';
     }
-    else else if (gCurrentFunction == FUNCTION_POWER_SAVE) {
+    else if (gCurrentFunction == FUNCTION_POWER_SAVE) {
         *p++ = 'S';
         *p++ = ' ';
     }
@@ -108,11 +112,7 @@ void UI_DisplayStatus() {
          *p++ = 'B';
          *p++ = ' ';
     }
-
-    if (gEeprom.RX_VFO == 0 && gEeprom.TX_VFO == 0) {
-        // Main VFO A
-    }
-
+    
     // USB-C
 #ifdef ENABLE_USBC_CHARGING_INDICATOR
     if (gChargingWithTypeC) {
@@ -122,8 +122,12 @@ void UI_DisplayStatus() {
         *p++ = ' ';
     }
 #endif
-
     *p = '\0';
+    }
+
+    if (gEeprom.RX_VFO == 0 && gEeprom.TX_VFO == 0) {
+        // Main VFO A
+    }
     UI_PrintStringSmallest(str, 0, 0, true, true);
 
     // Battery Display

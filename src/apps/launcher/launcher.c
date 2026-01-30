@@ -12,6 +12,7 @@
 #include "features/app.h"
 #include "audio.h"
 #include "apps/settings/settings.h"
+#include "apps/settings_new.h"
 #include "apps/aircopy/aircopy.h"
 #include "apps/boot/boot.h"
 
@@ -24,39 +25,37 @@
 #include "apps/aircopy/aircopy_ui.h"
 #include "apps/boot/welcome.h"
 
-// Reference implementation: https://github.com/qshosfw/matoz/blob/main/ui/appmenu.c
-// Renamed to LAUNCHER_... for consistency
+#include "../ui/ag_menu.h"
 
-uint16_t LAUNCHER_cursor = 0;
-
-typedef void (*LauncherAction_t)(void);
-
-typedef struct {
-    const char* name;
-    LauncherAction_t action;
-} LauncherItem_t;
-
-// Actions
-static void Action_Settings(void) {
+// Actions Wrappers
+static bool LA_Settings(const MenuItem *item, KEY_Code_t key, bool key_pressed, bool key_held) {
+    if (key != KEY_MENU) return false;
+    SETTINGS_NEW_Init();
     gRequestDisplayScreen = DISPLAY_MENU;
+    return true;
 }
 
-static void Action_EditScanlist(void) {
+static bool LA_EditScanlist(const MenuItem *item, KEY_Code_t key, bool key_pressed, bool key_held) {
+     if (key != KEY_MENU) return false;
      gEeprom.SCAN_LIST_DEFAULT = (gEeprom.SCAN_LIST_DEFAULT + 1) % 6;
     #ifdef ENABLE_BOOT_RESUME_STATE
         SETTINGS_WriteCurrentState();
     #endif
     gRequestDisplayScreen = DISPLAY_MAIN;
+    return true;
 }
 
-static void Action_Spectrum(void) {
-    #ifdef ENABLE_SPECTRUM_EXTENSIONS
+static bool LA_Spectrum(const MenuItem *item, KEY_Code_t key, bool key_pressed, bool key_held) {
+    if (key != KEY_MENU) return false;
+    #if defined(ENABLE_SPECTRUM_EXTENSIONS) && defined(ENABLE_SPECTRUM)
     APP_RunSpectrum();
     #endif
     gRequestDisplayScreen = DISPLAY_MAIN;
+    return true;
 }
 
-static void Action_FM(void) {
+static bool LA_FM(const MenuItem *item, KEY_Code_t key, bool key_pressed, bool key_held) {
+    if (key != KEY_MENU) return false;
     #ifdef ENABLE_FMRADIO
     if (!gFmRadioMode) {
         ACTION_FM();
@@ -64,141 +63,88 @@ static void Action_FM(void) {
         gRequestDisplayScreen = DISPLAY_FM;
     }
     #endif
+    return true;
 }
 
-static void Action_Scanner(void) {
+static bool LA_Scanner(const MenuItem *item, KEY_Code_t key, bool key_pressed, bool key_held) {
+     if (key != KEY_MENU) return false;
      gBackup_CROSS_BAND_RX_TX = gEeprom.CROSS_BAND_RX_TX;
      gEeprom.CROSS_BAND_RX_TX = CROSS_BAND_OFF;
      gUpdateStatus = true;
      SCANNER_Start(false);
      gRequestDisplayScreen = DISPLAY_SCANNER;
+     return true;
 }
 
-static void Action_AirCopy(void) {
+static bool LA_AirCopy(const MenuItem *item, KEY_Code_t key, bool key_pressed, bool key_held) {
+    if (key != KEY_MENU) return false;
     #ifdef ENABLE_AIRCOPY
     gRequestDisplayScreen = DISPLAY_AIRCOPY;
     #endif
+    return true;
 }
 
-static void Action_Info(void) {
+static bool LA_Info(const MenuItem *item, KEY_Code_t key, bool key_pressed, bool key_held) {
+    if (key != KEY_MENU) return false;
     UI_DisplayWelcome();
+    return true;
 }
 
-// Dynamic List Construction
-static const LauncherItem_t* CurrentList = NULL;
-static uint8_t CurrentListCount = 0;
-
-static LauncherItem_t Items[] = {
-    {"Settings", Action_Settings},
-    {"Edit Scanlist", Action_EditScanlist},
-    {"Spectrum", Action_Spectrum},
+// Menu Items
+static const MenuItem launcherItems[] = {
+    {"Settings", 0, NULL, NULL, NULL, LA_Settings},
+    {"Edit Scanlist", 0, NULL, NULL, NULL, LA_EditScanlist},
+    {"Spectrum", 0, NULL, NULL, NULL, LA_Spectrum},
     #ifdef ENABLE_FMRADIO
-    {"FM Radio", Action_FM},
+    {"FM Radio", 0, NULL, NULL, NULL, LA_FM},
     #endif
-    {"Scanner", Action_Scanner},
+    {"Scanner", 0, NULL, NULL, NULL, LA_Scanner},
     #ifdef ENABLE_AIRCOPY
-    {"Air Copy", Action_AirCopy},
+    {"Air Copy", 0, NULL, NULL, NULL, LA_AirCopy},
     #endif
-    {"Info", Action_Info}
+    {"Info", 0, NULL, NULL, NULL, LA_Info}
 };
 
+static Menu launcherMenu = {
+    .title = "Menu", // Or Launcher
+    .items = launcherItems,
+    .num_items = sizeof(launcherItems) / sizeof(launcherItems[0]),
+    .x = 0, .y = MENU_Y, .width = LCD_WIDTH, .height = LCD_HEIGHT - MENU_Y, .itemHeight = MENU_ITEM_H
+};
+
+
 void LAUNCHER_Init() {
-    CurrentList = Items;
-    CurrentListCount = sizeof(Items) / sizeof(LauncherItem_t);
-}
-
-void LAUNCHER_move(bool down) {
-    if (CurrentList == NULL) LAUNCHER_Init();
-    
-    if (down) {
-        if (LAUNCHER_cursor == CurrentListCount - 1) {
-            LAUNCHER_cursor = 0;
-        } else {
-            LAUNCHER_cursor++;
-        }
-    } else {
-        if (LAUNCHER_cursor == 0) {
-            LAUNCHER_cursor = CurrentListCount - 1;
-        } else {
-            LAUNCHER_cursor--;
-        }
-    }
-    gUpdateDisplay = true;
-}
-
-void LAUNCHER_close(void) {
-    gRequestDisplayScreen = DISPLAY_MAIN;
+    AG_MENU_Init(&launcherMenu);
 }
 
 void UI_DisplayLauncher(void) {
-    if (CurrentList == NULL) LAUNCHER_Init();
-
-    char String[32];
-    
-    UI_DisplayClear();
-
-    // NOTE: Status bar is handled globally by UI_DisplayStatus if called?
-    // User requested to remove redundant status bar code.
-    // However, if we don't call anything to draw status bar, will it be drawn?
-    // UI_DisplayMain calls UI_DisplayStatus. UI_DisplayLauncher typically just draws screen.
-    // If the main loop clears screen then calls this, we might need to verify if status bar persists.
-    // But assuming the global status bar system works as requested:
-    // We should ensure we don't draw ON TOP of it.
-    
-    const uint8_t perScreen = 7; // Fits 7 items in remaining 7 pages (Screen Pages 1-7)
-    
-    // Clamp offset calculation
-    int offset_val = LAUNCHER_cursor - 2;
-    if (offset_val < 0) offset_val = 0;
-    if (offset_val > CurrentListCount - perScreen) offset_val = CurrentListCount - perScreen;
-    if (offset_val < 0) offset_val = 0; 
-    
-    const uint8_t offset = (uint8_t)offset_val;
-
-    for (uint8_t i = 0; i < perScreen; ++i) {
-        uint8_t itemIndex = i + offset;
-        if (itemIndex >= CurrentListCount) break;
-
-        // Draw at y=0 relative to content buffer (gFrameBuffer[0]).
-        // BlitFullScreen shifts this to Screen Page 1 (y=8), immediately after status bar.
-        uint8_t y = i * 8; 
-        uint8_t *pLine = gFrameBuffer[i]; // Buffer Page i maps to Screen Page i+1
-
-        bool isCurrent = LAUNCHER_cursor == itemIndex;
-
-        if (isCurrent) {
-            memset(pLine, 127, 128); 
-        }
-
-        sprintf(String, "%s", CurrentList[itemIndex].name);
-        UI_PrintStringSmallest(String, 1, y, false, !isCurrent);
+    // Check if menu needs init? LAUNCHER_Init should be called before switching here ideally.
+    // But existing flow might rely on lazy init.
+    // AG_MENU_Init tracks active menu. If we are here, we want launcher active.
+    if (!AG_MENU_IsActive()) { 
+        LAUNCHER_Init();
     }
+    
+    // Safety check if active menu is NOT launcher (e.g. settings left active)
+    // We might need to enforce launcher if we are in DisplayLauncher mode.
+    // allow logic to persist.
 
+    AG_MENU_Render();
     ST7565_BlitFullScreen();
-    gUpdateDisplay = true;
 }
 
-void LAUNCHER_ProcessKeys(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld) {
-    if (!bKeyPressed) return;
-    if (CurrentList == NULL) LAUNCHER_Init();
 
-    switch (Key) {
-        case KEY_EXIT:
-            LAUNCHER_close();
-            break;
-        case KEY_UP:
-            LAUNCHER_move(false);
-            break;
-        case KEY_DOWN:
-            LAUNCHER_move(true);
-            break;
-        case KEY_PTT:
-        case KEY_MENU:
-            if (CurrentList[LAUNCHER_cursor].action) {
-                CurrentList[LAUNCHER_cursor].action();
-            }
-            break;
-        default:
-            break;
+void LAUNCHER_ProcessKeys(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld) {
+    if (!AG_MENU_IsActive()) LAUNCHER_Init();
+
+    if (AG_MENU_HandleInput(Key, bKeyPressed, bKeyHeld)) {
+        gUpdateDisplay = true;
+        return;
+    }
+    
+    // If handle input returns false (e.g. exit/back), what to do?
+    // Go to Main
+    if (!AG_MENU_IsActive()) { // Back was pressed
+         gRequestDisplayScreen = DISPLAY_MAIN;
     }
 }

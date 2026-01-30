@@ -39,6 +39,7 @@
 #endif
 #include "ui/inputbox.h"
 #include "ui/menu.h"
+#include "ui/ag_menu.h"
 #include "ui/ui.h"
 
 #ifndef ARRAY_SIZE
@@ -1957,6 +1958,17 @@ static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 
 void MENU_ProcessKeys(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 {
+    if (AG_MENU_IsActive()) {
+        if (AG_MENU_HandleInput(Key, bKeyPressed, bKeyHeld)) {
+             gUpdateDisplay = true;
+             return;
+        }
+
+        if (!AG_MENU_IsActive()) {
+             gRequestDisplayScreen = DISPLAY_LAUNCHER;
+        }
+        return;
+    }
     switch (Key)
     {
         case KEY_0:

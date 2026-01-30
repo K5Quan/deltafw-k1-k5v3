@@ -39,6 +39,7 @@
 #include "helper.h"
 #include "inputbox.h"
 #include "menu.h"
+#include "ag_menu.h"
 #include "ui.h"
 
 
@@ -228,10 +229,10 @@ const char gSubMenu_NA[4] =
 
 const char* const gSubMenu_RXMode[] =
 {
-    "MAIN\nONLY",       // TX and RX on main only
-    "DUAL RX\nRESPOND", // Watch both and respond
-    "CROSS\nBAND",      // TX on main, RX on secondary
-    "MAIN TX\nDUAL RX"  // always TX on main, but RX on both
+    "MAIN ONLY",       // TX and RX on main only
+    "DUAL RX RESPOND", // Watch both and respond
+    "CROSS BAND",      // TX on main, RX on secondary
+    "MAIN TX DUAL RX"  // always TX on main, but RX on both
 };
 
 #ifdef ENABLE_VOICE
@@ -246,9 +247,9 @@ const char* const gSubMenu_RXMode[] =
 const char* const gSubMenu_MDF[] =
 {
     "FREQ",
-    "CHANNEL\nNUMBER",
+    "CH NUM",
     "NAME",
-    "NAME\n+\nFREQ"
+    "NAME+FREQ"
 };
 
 #ifdef ENABLE_ALARM
@@ -262,7 +263,7 @@ const char* const gSubMenu_MDF[] =
 #ifdef ENABLE_DTMF_CALLING
 const char gSubMenu_D_RSP[][11] =
 {
-    "DO\nNOTHING",
+    "DO NOTHING",
     "RING",
     "REPLY",
     "BOTH"
@@ -274,8 +275,8 @@ const char* const gSubMenu_PTT_ID[] =
     "OFF",
     "UP CODE",
     "DOWN CODE",
-    "UP+DOWN\nCODE",
-    "APOLLO\nQUINDAR"
+    "UP+DOWN CODE",
+    "APOLLO QUINDAR"
 };
 
 const char gSubMenu_PONMSG[][8] =
@@ -306,23 +307,23 @@ const char gSubMenu_RESET[][4] =
 
 const char * const gSubMenu_F_LOCK[] =
 {
-    "DEFAULT+\n137-174\n400-470",
-    "FCC HAM\n144-148\n420-450",
+    "DEFAULT+ 137-174 400-470",
+    "FCC HAM 144-148 420-450",
 #ifdef ENABLE_FREQUENCY_LOCK_REGION_CA
-    "CA HAM\n144-148\n430-450",
+    "CA HAM 144-148 430-450",
 #endif
-    "CE HAM\n144-146\n430-440",
-    "GB HAM\n144-148\n430-440",
-    "137-174\n400-430",
-    "137-174\n400-438",
+    "CE HAM 144-146 430-440",
+    "GB HAM 144-148 430-440",
+    "137-174 400-430",
+    "137-174 400-438",
 #ifdef ENABLE_PMR446_FREQUENCY_BAND
     "PMR 446",
 #endif
 #ifdef ENABLE_GMRS_FRS_MURS_BANDS
-    "GMRS\nFRS\nMURS",
+    "GMRS FRS MURS",
 #endif
-    "DISABLE\nALL",
-    "UNLOCK\nALL",
+    "DISABLE ALL",
+    "UNLOCK ALL",
 };
 
 const char gSubMenu_RX_TX[][6] =
@@ -433,7 +434,7 @@ const t_sidefunction gSubMenu_SIDEFUNCTIONS[] =
 {
     {"NONE",            ACTION_OPT_NONE},
 #ifdef ENABLE_FLASHLIGHT
-    {"FLASH\nLIGHT",    ACTION_OPT_FLASHLIGHT},
+    {"FLASHLIGHT",    ACTION_OPT_FLASHLIGHT},
 #endif
     {"POWER",           ACTION_OPT_POWER},
     {"MONITOR",         ACTION_OPT_MONITOR},
@@ -451,27 +452,27 @@ const t_sidefunction gSubMenu_SIDEFUNCTIONS[] =
     {"1750Hz",          ACTION_OPT_1750},
 #endif
 #ifdef ENABLE_REGA
-    {"REGA\nALARM",     ACTION_OPT_REGA_ALARM},
-    {"REGA\nTEST",      ACTION_OPT_REGA_TEST},
+    {"REGA ALARM",     ACTION_OPT_REGA_ALARM},
+    {"REGA TEST",      ACTION_OPT_REGA_TEST},
 #endif
-    {"LOCK\nKEYPAD",    ACTION_OPT_KEYLOCK},
-    {"VFO A\nVFO B",    ACTION_OPT_A_B},
-    {"VFO\nMEM",        ACTION_OPT_VFO_MR},
+    {"LOCK KEYPAD",    ACTION_OPT_KEYLOCK},
+    {"VFO A VFO B",    ACTION_OPT_A_B},
+    {"VFO MEM",        ACTION_OPT_VFO_MR},
     {"MODE",            ACTION_OPT_SWITCH_DEMODUL},
 #ifdef ENABLE_BLMIN_TMP_OFF
-    {"BLMIN\nTMP OFF",  ACTION_OPT_BLMIN_TMP_OFF},      //BackLight Minimum Temporay OFF
+    {"BLMIN TMP OFF",  ACTION_OPT_BLMIN_TMP_OFF},      //BackLight Minimum Temporay OFF
 #endif
 #ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     {"RX MODE",         ACTION_OPT_RXMODE},
     {"MAIN ONLY",       ACTION_OPT_MAINONLY},
     {"PTT",             ACTION_OPT_PTT},
-    {"WIDE\nNARROW",    ACTION_OPT_WN},
+    {"WIDE NARROW",    ACTION_OPT_WN},
     //#if !defined(ENABLE_SPECTRUM) || !defined(ENABLE_FMRADIO)
     {"MUTE",            ACTION_OPT_MUTE},
     //#endif
     #ifdef ENABLE_RESCUE_OPERATIONS
-        {"POWER\nHIGH",    ACTION_OPT_POWER_HIGH},
-        {"REMOVE\nOFFSET",  ACTION_OPT_REMOVE_OFFSET},
+        {"POWER HIGH",    ACTION_OPT_POWER_HIGH},
+        {"REMOVE OFFSET",  ACTION_OPT_REMOVE_OFFSET},
     #endif
 #endif
 };
@@ -515,6 +516,12 @@ void UI_DisplayMenu(void)
 #endif
 
     UI_DisplayClear();
+
+    if (AG_MENU_IsActive()) {
+        AG_MENU_Render();
+        ST7565_BlitFullScreen();
+        return;
+    }
 
 #ifdef ENABLE_CUSTOM_FIRMWARE_MODS
     UI_DrawLineBuffer(gFrameBuffer, 48, 0, 48, 55, 1); // Be ware, status zone = 8 lines, the rest = 56 ->total 64
@@ -656,7 +663,7 @@ void UI_DisplayMenu(void)
             }
             else
             {
-                sprintf(String, "%s\n%sW", gSubMenu_TXP[gSubMenuSelection], gSubMenu_SET_PWR[gSubMenuSelection - 1]);
+                sprintf(String, "%s %sW", gSubMenu_TXP[gSubMenuSelection], gSubMenu_SET_PWR[gSubMenuSelection - 1]);
             }
             break;
 
@@ -912,7 +919,7 @@ void UI_DisplayMenu(void)
             }
             else if(gSubMenuSelection < 81)
             {
-                sprintf(String, "CARRIER\n%02ds:%03dms", ((gSubMenuSelection * 250) / 1000), ((gSubMenuSelection * 250) % 1000));
+                sprintf(String, "CARRIER %02ds:%03dms", ((gSubMenuSelection * 250) / 1000), ((gSubMenuSelection * 250) % 1000));
                 //#if !defined(ENABLE_SPECTRUM) || !defined(ENABLE_FMRADIO)
                 //ST7565_Gauge(5, 1, 80, gSubMenuSelection);
                 gaugeLine = 5;
@@ -922,7 +929,7 @@ void UI_DisplayMenu(void)
             }
             else
             {
-                sprintf(String, "TIMEOUT\n%02dm:%02ds", (((gSubMenuSelection - 80) * 5) / 60), (((gSubMenuSelection - 80) * 5) % 60));
+                sprintf(String, "TIMEOUT %02dm:%02ds", (((gSubMenuSelection - 80) * 5) / 60), (((gSubMenuSelection - 80) * 5) % 60));
                 //#if !defined(ENABLE_SPECTRUM) || !defined(ENABLE_FMRADIO)
                 //ST7565_Gauge(5, 80, 104, gSubMenuSelection);
                 gaugeLine = 5;
@@ -942,11 +949,11 @@ void UI_DisplayMenu(void)
 
         case MENU_S_LIST:
             if (gSubMenuSelection == 0)
-                strcpy(String, "LIST [0]\nNO LIST");
+                strcpy(String, "LIST [0] NO LIST");
             else if (gSubMenuSelection < 4)
                 sprintf(String, "LIST [%u]", gSubMenuSelection);
             else if (gSubMenuSelection == 4)
-                strcpy(String, "LISTS\n[1, 2, 3]");
+                strcpy(String, "LISTS [1, 2, 3]");
             else if (gSubMenuSelection == 5)
                 strcpy(String, "ALL");
             break;
@@ -963,11 +970,11 @@ void UI_DisplayMenu(void)
             break;
 #endif
         case MENU_UPCODE:
-            sprintf(String, "%.8s\n%.8s", gEeprom.DTMF_UP_CODE, gEeprom.DTMF_UP_CODE + 8);
+            sprintf(String, "%.8s %.8s", gEeprom.DTMF_UP_CODE, gEeprom.DTMF_UP_CODE + 8);
             break;
 
         case MENU_DWCODE:
-            sprintf(String, "%.8s\n%.8s", gEeprom.DTMF_DOWN_CODE, gEeprom.DTMF_DOWN_CODE + 8);
+            sprintf(String, "%.8s %.8s", gEeprom.DTMF_DOWN_CODE, gEeprom.DTMF_DOWN_CODE + 8);
             break;
 
 #ifdef ENABLE_DTMF_CALLING
@@ -1011,12 +1018,12 @@ void UI_DisplayMenu(void)
 
         case MENU_VOL:
 #ifdef ENABLE_CUSTOM_FIRMWARE_MODS
-            sprintf(String, "%s\n%s",
+            sprintf(String, "%s %s",
                 AUTHOR_STRING_2,
                 VERSION_STRING_2
             );
 #else
-            sprintf(String, "%u.%02uV\n%u%%",
+            sprintf(String, "%u.%02uV %u%%",
                 gBatteryVoltageAverage / 100, gBatteryVoltageAverage % 100,
                 BATTERY_VoltsToPercent(gBatteryVoltageAverage));
 #endif
@@ -1032,7 +1039,7 @@ void UI_DisplayMenu(void)
 #else
             if(!gIsInSubMenu && gUnlockAllTxConfCnt>0 && gUnlockAllTxConfCnt<10)
 #endif
-                strcpy(String, "READ\nMANUAL");
+                strcpy(String, "READ MANUAL");
             else
                 strcpy(String, gSubMenu_F_LOCK[gSubMenuSelection]);
             break;
@@ -1045,7 +1052,7 @@ void UI_DisplayMenu(void)
 
                     writeXtalFreqCal(gSubMenuSelection, false);
 
-                    sprintf(String, "%d\n%u.%06u\nMHz",
+                    sprintf(String, "%d %u.%06u MHz",
                         gSubMenuSelection,
                         xtal_Hz / 1000000, xtal_Hz % 1000000);
                 }
@@ -1055,7 +1062,7 @@ void UI_DisplayMenu(void)
         case MENU_BATCAL:
         {
             const uint16_t vol = (uint32_t)gBatteryVoltageAverage * gBatteryCalibration[3] / gSubMenuSelection;
-            sprintf(String, "%u.%02uV\n%u", vol / 100, vol % 100, gSubMenuSelection);
+            sprintf(String, "%u.%02uV %u", vol / 100, vol % 100, gSubMenuSelection);
             break;
         }
 
@@ -1092,7 +1099,7 @@ void UI_DisplayMenu(void)
 
 #ifdef ENABLE_CUSTOM_FIRMWARE_MODS
         case MENU_SET_PWR:
-            sprintf(String, "%s\n%sW", gSubMenu_TXP[gSubMenuSelection + 1], gSubMenu_SET_PWR[gSubMenuSelection]);
+            sprintf(String, "%s %sW", gSubMenu_TXP[gSubMenuSelection + 1], gSubMenu_SET_PWR[gSubMenuSelection]);
             break;
     
         case MENU_SET_PTT:
@@ -1126,7 +1133,7 @@ void UI_DisplayMenu(void)
         case MENU_TX_LOCK:
             if(TX_freq_check(gEeprom.VfoInfo[gEeprom.TX_VFO].pTX->Frequency) == 0)
             {
-                strcpy(String, "Inside\nF Lock\nPlan");
+                strcpy(String, "Inside F Lock Plan");
             }
             else
             {
@@ -1203,7 +1210,7 @@ void UI_DisplayMenu(void)
             // count number of lines
             for (i = 0; i < len; i++)
             {
-                if (String[i] == '\n' && i < (len - 1))
+                if (String[i] == ' ' && i < (len - 1))
                 {   // found new line char
                     lines++;
                     String[i] = 0;  // null terminate the line

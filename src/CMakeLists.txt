@@ -31,6 +31,8 @@ target_sources(App INTERFACE
     frequencies.c
     dcs.c
     apps/settings/settings.c
+    apps/settings_new.c
+    
     functions.c
     ui/bitmaps.c
     ui/font.c
@@ -75,6 +77,8 @@ target_sources(App INTERFACE
     apps/scanner/scanner_ui.c
     ui/status.c
     ui/ui.c
+    ui/ag_graphics.c
+    ui/ag_menu.c
     apps/boot/welcome.c
 
     # Third Party
