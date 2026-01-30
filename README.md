@@ -13,16 +13,16 @@
     <img src="https://github.com/qshosfw/deltafw-k1-k5v3/actions/workflows/main.yml/badge.svg" alt="Build Status">
   </a>
   <a href="https://github.com/qshosfw/deltafw-k1-k5v3/releases">
-    <img src="https://img.shields.io/github/v/release/qshosfw/deltafw?include_prereleases" alt="Latest Release">
+    <img src="https://img.shields.io/github/v/release/qshosfw/deltafw-k1-k5v3?include_prereleases" alt="Latest Release">
   </a>
   <a href="https://github.com/qshosfw/deltafw-k1-k5v3/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/qshosfw/deltafw" alt="License">
+    <img src="https://img.shields.io/github/license/qshosfw/deltafw-k1-k5v3" alt="License">
   </a>
   <a href="https://github.com/qshosfw/deltafw-k1-k5v3/issues">
-    <img src="https://img.shields.io/github/issues/qshosfw/deltafw" alt="Issues">
+    <img src="https://img.shields.io/github/issues/qshosfw/deltafw-k1-k5v3" alt="Issues">
   </a>
   <a href="https://github.com/qshosfw/deltafw-k1-k5v3/stargazers">
-    <img src="https://img.shields.io/github/stars/qshosfw/deltafw?style=flat" alt="Stars">
+    <img src="https://img.shields.io/github/stars/qshosfw/deltafw-k1-k5v3?style=flat" alt="Stars">
   </a>
 </p>
 
