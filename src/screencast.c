@@ -19,8 +19,6 @@
 #include "screencast.h"
 #include "core/misc.h"
 
-#endif
-
 static void Screenshot_Send(const uint8_t *buf, uint16_t len)
 {
 #if defined(ENABLE_USB)

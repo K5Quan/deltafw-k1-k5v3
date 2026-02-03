@@ -884,12 +884,12 @@ void UI_DisplayMain(void)
                 uint8_t countList = 0;
                 uint8_t shiftList = 0;
 
-                if(gMR_ChannelAttributes[gEeprom.ScreenChannel[vfo_num]].exclude == false)
+                if(gMR_ChannelExclude[gEeprom.ScreenChannel[vfo_num]] == false)
                 {
                     // show the scan list assigment symbols
                     const ChannelAttributes_t att = gMR_ChannelAttributes[gEeprom.ScreenChannel[vfo_num]];
 
-                    countList = ((att.scanlist >> 0) & 1) + ((att.scanlist >> 1) & 1) + ((att.scanlist >> 2) & 1);
+                    countList = att.scanlist1 + att.scanlist2 + att.scanlist3;
 
                     if(countList == 0)
                     {
@@ -899,17 +899,17 @@ void UI_DisplayMain(void)
                     {
                         shiftList = countList;
 
-                        if ((att.scanlist >> 0) & 1)
+                        if (att.scanlist1)
                         {
                             memcpy(p_line0 + 127 - (shiftList * 6), BITMAP_ScanList1, sizeof(BITMAP_ScanList1));
                             shiftList--;
                         }
-                        if ((att.scanlist >> 1) & 1)
+                        if (att.scanlist2)
                         {
                             memcpy(p_line0 + 127 - (shiftList * 6), BITMAP_ScanList2, sizeof(BITMAP_ScanList2));
                             shiftList--;
                         }
-                        if ((att.scanlist >> 2) & 1)
+                        if (att.scanlist3)
                         {
                             memcpy(p_line0 + 127 - (shiftList * 6), BITMAP_ScanList3, sizeof(BITMAP_ScanList3));
                         }

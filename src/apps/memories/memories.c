@@ -363,23 +363,23 @@ static void ChangeBusyLock(const MenuItem *item, bool up) {
 
 static void GetScanlist1(const MenuItem *item, char *buf, uint8_t sz) {
     (void)item;
-    snprintf(buf, sz, "%s", yesNoNames[(editChannel.SCANLIST_PARTICIPATION >> 0) & 1]);
+    snprintf(buf, sz, "%s", yesNoNames[editChannel.SCANLIST1_PARTICIPATION ? 1 : 0]);
 }
 
 static void ChangeScanlist1(const MenuItem *item, bool up) {
     (void)item; (void)up;
-    editChannel.SCANLIST_PARTICIPATION ^= (1 << 0);
+    editChannel.SCANLIST1_PARTICIPATION = !editChannel.SCANLIST1_PARTICIPATION;
     SaveChannelData();
 }
 
 static void GetScanlist2(const MenuItem *item, char *buf, uint8_t sz) {
     (void)item;
-    snprintf(buf, sz, "%s", yesNoNames[(editChannel.SCANLIST_PARTICIPATION >> 1) & 1]);
+    snprintf(buf, sz, "%s", yesNoNames[editChannel.SCANLIST2_PARTICIPATION ? 1 : 0]);
 }
 
 static void ChangeScanlist2(const MenuItem *item, bool up) {
     (void)item; (void)up;
-    editChannel.SCANLIST_PARTICIPATION ^= (1 << 1);
+    editChannel.SCANLIST2_PARTICIPATION = !editChannel.SCANLIST2_PARTICIPATION;
     SaveChannelData();
 }
 

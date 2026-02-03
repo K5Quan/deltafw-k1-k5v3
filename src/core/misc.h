@@ -36,23 +36,18 @@
     #define SWAP(a, b) ({ __typeof__ (a) _c = (a);  a = b; b = _c; })
 #endif
 
-#define FM_CHANNELS_MAX 48
-#define MR_CHANNELS_MAX 768
-#define MR_CHANNELS_LIST 9
-#define MENU_ITEMS 67
-
-#define IS_MR_CHANNEL(x)       ((x) >= MR_CHANNEL_FIRST && (x) <= MR_CHANNEL_LAST)
+#define IS_MR_CHANNEL(x)       ((x) <= MR_CHANNEL_LAST)
 #define IS_FREQ_CHANNEL(x)     ((x) >= FREQ_CHANNEL_FIRST && (x) <= FREQ_CHANNEL_LAST)
 #define IS_VALID_CHANNEL(x)    ((x) < LAST_CHANNEL)
 #define IS_NOAA_CHANNEL(x)     ((x) >= NOAA_CHANNEL_FIRST && (x) <= NOAA_CHANNEL_LAST)
 
 enum {
     MR_CHANNEL_FIRST   = 0,
-    MR_CHANNEL_LAST    = MR_CHANNELS_MAX - 1,
-    FREQ_CHANNEL_FIRST = MR_CHANNELS_MAX,
-    FREQ_CHANNEL_LAST  = MR_CHANNELS_MAX + 6,
-    NOAA_CHANNEL_FIRST = MR_CHANNELS_MAX + 7,
-    NOAA_CHANNEL_LAST  = MR_CHANNELS_MAX + 16,
+    MR_CHANNEL_LAST    = 199u,
+    FREQ_CHANNEL_FIRST = 200u,
+    FREQ_CHANNEL_LAST  = 206u,
+    NOAA_CHANNEL_FIRST = 207u,
+    NOAA_CHANNEL_LAST  = 216u,
     LAST_CHANNEL
 };
 
@@ -164,9 +159,6 @@ extern bool                  gSetting_ScrambleEnable;
 
 extern enum BacklightOnRxTx_t gSetting_backlight_on_tx_rx;
 
-extern uint8_t            gAircopyCurrentMapIndex;
-extern bool               gAirCopyBootMode;
-
 #ifdef ENABLE_AM_FIX
     extern bool              gSetting_AM_fix;
 #endif
@@ -227,17 +219,18 @@ extern uint16_t              gEEPROM_1F8C;
 
 typedef union {
     struct {
-        uint16_t
-            band :      3,
+        uint8_t
+            band : 3,
             compander : 2,
-            exclude :   1,
-            scanlist :  10;
+            scanlist1 : 1,
+            scanlist2 : 1,
+            scanlist3 : 1;
     };
-    uint16_t __val;
+    uint8_t __val;
 } ChannelAttributes_t;
 
-extern ChannelAttributes_t   gMR_ChannelAttributes[MR_CHANNELS_MAX + 7];
-
+extern ChannelAttributes_t   gMR_ChannelAttributes[207];
+extern bool                  gMR_ChannelExclude[207];
 
 extern volatile uint16_t     gBatterySaveCountdown_10ms;
 
@@ -265,7 +258,7 @@ extern volatile bool         gTxTimeoutReached;
     #endif
     #ifdef ENABLE_SERIAL_SCREENCAST
         extern volatile uint8_t  gUART_LockScreenshot; // lock screenshot if Chirp is used
-extern bool gUSB_ScreenshotEnabled;
+        extern bool              gUSB_ScreenshotEnabled;
     #endif
 #endif
 
@@ -313,7 +306,7 @@ extern bool                  gFlagReconfigureVfos;
 extern uint8_t               gVfoConfigureMode;
 extern bool                  gFlagResetVfos;
 extern bool                  gRequestSaveVFO;
-extern uint16_t              gRequestSaveChannel;
+extern uint8_t               gRequestSaveChannel;
 extern bool                  gRequestSaveSettings;
 #ifdef ENABLE_FMRADIO
     extern bool              gRequestSaveFM;
@@ -344,7 +337,7 @@ extern bool                  g_SquelchLost;
 extern volatile uint16_t     gFlashLightBlinkCounter;
 
 extern bool                  gFlagEndTransmission;
-extern uint16_t              gNextMrChannel;
+extern uint8_t               gNextMrChannel;
 extern ReceptionMode_t       gRxReceptionMode;
 
  //TRUE when dual watch is momentarly suspended and RX_VFO is locked to either last TX or RX
@@ -360,7 +353,7 @@ extern uint8_t               gScanDelay_10ms;
 extern uint8_t               gFSKWriteIndex;
 #ifdef ENABLE_NOAA
     extern bool              gIsNoaaMode;
-    extern uint16_t          gNoaaChannel;
+    extern uint8_t           gNoaaChannel;
 #endif
 extern volatile bool         gNextTimeslice;
 extern bool                  gUpdateDisplay;

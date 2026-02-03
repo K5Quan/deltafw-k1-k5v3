@@ -61,30 +61,60 @@ bool RADIO_CheckValidChannel(uint16_t channel, bool checkScanList, uint8_t scanL
 
     const ChannelAttributes_t att = gMR_ChannelAttributes[channel];
 
-    if (checkScanList && att.exclude == true)
+    if (checkScanList && gMR_ChannelExclude[channel] == true)
         return false;
 
     if (att.band > BAND7_470MHz)
         return false;
 
-    if (!checkScanList || scanList > MR_CHANNELS_LIST)
+    if (!checkScanList || scanList > 4)
         return true;
 
-    if (!((att.scanlist >> scanList) & 1)) {
+    /*
+    if(scanList == 0 && (att.scanlist1 == 1 || att.scanlist2 == 1 || att.scanlist3 == 1))
+    {
+        return false;
+    }
+    else if(scanList == 1 && att.scanlist1 != 1)
+    {
+        return false;
+    }
+    else if(scanList == 2 && att.scanlist2 != 1)
+    {
+        return false;
+    }
+    else if(scanList == 3 && att.scanlist3 != 1)
+    {
+        return false;
+    }
+    else if(scanList == 4 && (att.scanlist1 == 0 && att.scanlist2 == 0 && att.scanlist3 == 0))
+    {
+        return false;
+    }
+    */
+
+    if ((scanList == 0 && (att.scanlist1 == 1 || att.scanlist2 == 1 || att.scanlist3 == 1)) ||
+        (scanList == 1 && att.scanlist1 != 1) ||
+        (scanList == 2 && att.scanlist2 != 1) ||
+        (scanList == 3 && att.scanlist3 != 1) ||
+        (scanList == 4 && (att.scanlist1 == 0 && att.scanlist2 == 0 && att.scanlist3 == 0))) {
         return false;
     }
 
-    // Default priority channels
-    const uint16_t PriorityCh1 = gEeprom.SCANLIST_PRIORITY_CH[0];
-    const uint16_t PriorityCh2 = gEeprom.SCANLIST_PRIORITY_CH[1];
+    //return true;
+
+    // I don't understand what this code is for...
+    
+    const uint8_t PriorityCh1 = gEeprom.SCANLIST_PRIORITY_CH1[scanList - 1];
+    const uint8_t PriorityCh2 = gEeprom.SCANLIST_PRIORITY_CH2[scanList - 1];
 
     return PriorityCh1 != channel && PriorityCh2 != channel;
 }
 
-uint16_t RADIO_FindNextChannel(uint16_t Channel, int8_t Direction, bool bCheckScanList, uint8_t VFO)
+uint8_t RADIO_FindNextChannel(uint8_t Channel, int8_t Direction, bool bCheckScanList, uint8_t VFO)
 {
-    for (uint16_t i = 0; IS_MR_CHANNEL(i); i++, Channel += Direction) {
-        if (Channel == 0xFFFF) {
+    for (unsigned int i = 0; IS_MR_CHANNEL(i); i++, Channel += Direction) {
+        if (Channel == 0xFF) {
             Channel = MR_CHANNEL_LAST;
         } else if (!IS_MR_CHANNEL(Channel)) {
             Channel = MR_CHANNEL_FIRST;
@@ -95,15 +125,17 @@ uint16_t RADIO_FindNextChannel(uint16_t Channel, int8_t Direction, bool bCheckSc
         }
     }
 
-    return 0xFFFF;
+    return 0xFF;
 }
 
-void RADIO_InitInfo(VFO_Info_t *pInfo, const uint16_t ChannelSave, const uint32_t Frequency)
+void RADIO_InitInfo(VFO_Info_t *pInfo, const uint8_t ChannelSave, const uint32_t Frequency)
 {
     memset(pInfo, 0, sizeof(*pInfo));
 
     pInfo->Band                     = FREQUENCY_GetBand(Frequency);
-    pInfo->SCANLIST_PARTICIPATION   = 0;
+    pInfo->SCANLIST1_PARTICIPATION  = false;
+    pInfo->SCANLIST2_PARTICIPATION  = false;
+    pInfo->SCANLIST3_PARTICIPATION  = false;
     pInfo->STEP_SETTING             = STEP_12_5kHz;
     pInfo->StepFrequency            = gStepFrequencyTable[pInfo->STEP_SETTING];
     pInfo->CHANNEL_SAVE             = ChannelSave;
@@ -136,7 +168,7 @@ void RADIO_ConfigureChannel(const unsigned int VFO, const unsigned int configure
             gEeprom.ScreenChannel[VFO] = FREQ_CHANNEL_FIRST + BAND6_400MHz;
     }
 
-    uint16_t channel = gEeprom.ScreenChannel[VFO];
+    uint8_t channel = gEeprom.ScreenChannel[VFO];
 
     if (IS_VALID_CHANNEL(channel)) {
 #ifdef ENABLE_NOAA
@@ -156,7 +188,7 @@ void RADIO_ConfigureChannel(const unsigned int VFO, const unsigned int configure
 
         if (IS_MR_CHANNEL(channel)) {
             channel = RADIO_FindNextChannel(channel, RADIO_CHANNEL_UP, false, VFO);
-            if (channel == 0xFFFF) {
+            if (channel == 0xFF) {
                 channel                    = gEeprom.FreqChannel[VFO];
                 gEeprom.ScreenChannel[VFO] = gEeprom.FreqChannel[VFO];
             }
@@ -170,13 +202,13 @@ void RADIO_ConfigureChannel(const unsigned int VFO, const unsigned int configure
         channel = FREQ_CHANNEL_LAST - 1;
 
     ChannelAttributes_t att = gMR_ChannelAttributes[channel];
-    if (att.__val == 0xFFFF) { // invalid/unused channel
+    if (att.__val == 0xFF) { // invalid/unused channel
         if (IS_MR_CHANNEL(channel)) {
             channel                    = gEeprom.FreqChannel[VFO];
             gEeprom.ScreenChannel[VFO] = channel;
         }
 
-        uint16_t bandIdx = channel - FREQ_CHANNEL_FIRST;
+        uint8_t bandIdx = channel - FREQ_CHANNEL_FIRST;
         RADIO_InitInfo(pVfo, channel, frequencyBandTable[bandIdx].lower);
         return;
     }
@@ -186,25 +218,33 @@ void RADIO_ConfigureChannel(const unsigned int VFO, const unsigned int configure
         band = BAND6_400MHz;
     }
 
-    uint8_t bParticipation;
+    bool bParticipation1;
+    bool bParticipation2;
+    bool bParticipation3;
 
     if (IS_MR_CHANNEL(channel)) {
-        bParticipation = att.scanlist;
+        bParticipation1 = att.scanlist1;
+        bParticipation2 = att.scanlist2;
+        bParticipation3 = att.scanlist3;
     }
     else {
         band = channel - FREQ_CHANNEL_FIRST;
-        bParticipation = MR_CHANNELS_LIST + 1;
+        bParticipation1 = true;
+        bParticipation2 = true;
+        bParticipation3 = true;
     }
 
     pVfo->Band                    = band;
-    pVfo->SCANLIST_PARTICIPATION  = bParticipation;
+    pVfo->SCANLIST1_PARTICIPATION = bParticipation1;
+    pVfo->SCANLIST2_PARTICIPATION = bParticipation2;
+    pVfo->SCANLIST3_PARTICIPATION = bParticipation3;
     pVfo->CHANNEL_SAVE            = channel;
 
     uint32_t base;
     if (IS_MR_CHANNEL(channel))
         base = channel * 16;
     else
-        base = 0x009000 + ((channel - FREQ_CHANNEL_FIRST) * 32) + (VFO * 16);
+        base = 0x001000 + ((channel - FREQ_CHANNEL_FIRST) * 32) + (VFO * 16);
 
     if (configure == VFO_CONFIGURE_RELOAD || IS_FREQ_CHANNEL(channel))
     {

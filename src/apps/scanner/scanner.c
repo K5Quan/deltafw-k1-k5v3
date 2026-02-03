@@ -32,7 +32,7 @@ DCS_CodeType_t    gScanCssResultType;
 uint8_t           gScanCssResultCode;
 bool              gScanSingleFrequency; // scan CTCSS/DCS codes for current frequency
 SCAN_SaveState_t  gScannerSaveState;
-uint16_t          gScanChannel;
+uint8_t           gScanChannel;
 uint32_t          gScanFrequency;
 SCAN_CssState_t   gScanCssState;
 uint8_t           gScanProgressIndicator;
@@ -67,7 +67,7 @@ static void SCANNER_Key_DIGITS(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
                 gAnotherVoiceID = (VOICE_ID_t)Key;
 #endif
                 gShowChPrefix = RADIO_CheckValidChannel(chan, false, 0);
-                gScanChannel  = (uint16_t)chan;
+                gScanChannel  = (uint8_t)chan;
                 return;
             }
         }

@@ -95,7 +95,7 @@ typedef struct VFO_Info_t
     uint32_t       TX_OFFSET_FREQUENCY;
     uint16_t       StepFrequency;
 
-    uint16_t        CHANNEL_SAVE;
+    uint8_t        CHANNEL_SAVE;
 
     uint8_t        TX_OFFSET_FREQUENCY_DIRECTION;
 
@@ -115,9 +115,11 @@ typedef struct VFO_Info_t
     uint8_t        SCRAMBLING_TYPE;
     uint8_t        CHANNEL_BANDWIDTH;
 
-    uint16_t       SCANLIST_PARTICIPATION;
+    uint8_t        SCANLIST1_PARTICIPATION;
+    uint8_t        SCANLIST2_PARTICIPATION;
+    uint8_t        SCANLIST3_PARTICIPATION;
 
-    uint16_t       Band;
+    uint8_t        Band;
 #ifdef ENABLE_DTMF_CALLING
     uint8_t        DTMF_DECODING_ENABLE;
 #endif
@@ -149,8 +151,8 @@ extern DCS_CodeType_t gCurrentCodeType;
 extern VfoState_t     VfoState[2];
 
 bool     RADIO_CheckValidChannel(uint16_t channel, bool checkScanList, uint8_t scanList);
-uint16_t RADIO_FindNextChannel(uint16_t ChNum, int8_t Direction, bool bCheckScanList, uint8_t RadioNum);
-void     RADIO_InitInfo(VFO_Info_t *pInfo, const uint16_t ChannelSave, const uint32_t Frequency);
+uint8_t  RADIO_FindNextChannel(uint8_t ChNum, int8_t Direction, bool bCheckScanList, uint8_t RadioNum);
+void     RADIO_InitInfo(VFO_Info_t *pInfo, const uint8_t ChannelSave, const uint32_t Frequency);
 void     RADIO_ConfigureChannel(const unsigned int VFO, const unsigned int configure);
 void     RADIO_ConfigureSquelchAndOutputPower(VFO_Info_t *pInfo);
 void     RADIO_ApplyOffset(VFO_Info_t *pInfo);

@@ -64,18 +64,19 @@ static void toggle_chan_scanlist(void)
     }
     
     // Remove exclude
-    // Remove exclude
-    if(gMR_ChannelAttributes[gTxVfo->CHANNEL_SAVE].exclude == true)
+    if(gMR_ChannelExclude[gTxVfo->CHANNEL_SAVE] == true)
     {
-        gMR_ChannelAttributes[gTxVfo->CHANNEL_SAVE].exclude = false;
+        gMR_ChannelExclude[gTxVfo->CHANNEL_SAVE] = false;
         return;
     }
 
-    uint16_t scanTmp = gTxVfo->SCANLIST_PARTICIPATION & 0x07; // Get first 3 lists
+    uint8_t scanTmp = gTxVfo->SCANLIST1_PARTICIPATION | (gTxVfo->SCANLIST2_PARTICIPATION << 1) | (gTxVfo->SCANLIST3_PARTICIPATION << 2);
 
-    scanTmp = (scanTmp + 1) & 0x07;
+    scanTmp = (scanTmp++ < 7) ? scanTmp: 0;
 
-    gTxVfo->SCANLIST_PARTICIPATION = (gTxVfo->SCANLIST_PARTICIPATION & ~0x07) | scanTmp;
+    gTxVfo->SCANLIST1_PARTICIPATION = (scanTmp >> 0) & 0x01;
+    gTxVfo->SCANLIST2_PARTICIPATION = (scanTmp >> 1) & 0x01;
+    gTxVfo->SCANLIST3_PARTICIPATION = (scanTmp >> 2) & 0x01;
 
     SETTINGS_UpdateChannel(gTxVfo->CHANNEL_SAVE, gTxVfo, true, true, true);
 
@@ -677,7 +678,7 @@ static void MAIN_Key_MENU(bool bKeyPressed, bool bKeyHeld)
             {
                 if(FUNCTION_IsRx() || gScanPauseDelayIn_10ms > 9)
                 {
-                    gMR_ChannelAttributes[gTxVfo->CHANNEL_SAVE].exclude = true;
+                    gMR_ChannelExclude[gTxVfo->CHANNEL_SAVE] = true;
 
                     gVfoConfigureMode = VFO_CONFIGURE;
                     gFlagResetVfos    = true;

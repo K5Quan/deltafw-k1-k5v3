@@ -67,13 +67,6 @@ const t_menu_item MenuList[] =
     {"ScAdd1",      MENU_S_ADD1        },
     {"ScAdd2",      MENU_S_ADD2        },
     {"ScAdd3",      MENU_S_ADD3        },
-    {"ScAdd4",      MENU_S_ADD4        },
-    {"ScAdd5",      MENU_S_ADD5        },
-    {"ScAdd6",      MENU_S_ADD6        },
-    {"ScAdd7",      MENU_S_ADD7        },
-    {"ScAdd8",      MENU_S_ADD8        },
-    {"ScAdd9",      MENU_S_ADD9        },
-    {"ScAdd10",     MENU_S_ADD10       },
     {"ChSave",      MENU_MEM_CH        }, // was "MEM-CH"
     {"ChDele",      MENU_DEL_CH        }, // was "DEL-CH"
     {"ChName",      MENU_MEM_NAME      },
@@ -1319,7 +1312,7 @@ void UI_DisplayMenu(void)
             UI_PrintStringSmallNormal(pPrintStr, menu_item_x1, menu_item_x2, 2);
 
             for (uint8_t pri = 1; pri <= 2; pri++) {
-                uint8_t channel = (pri == 1) ? gEeprom.SCANLIST_PRIORITY_CH[i * 2] : gEeprom.SCANLIST_PRIORITY_CH[i * 2 + 1];
+                uint8_t channel = (pri == 1) ? gEeprom.SCANLIST_PRIORITY_CH1[i] : gEeprom.SCANLIST_PRIORITY_CH2[i];
 
                 if (IS_MR_CHANNEL(channel)) {
                     sprintf(String, "PRI%d:%u", pri, channel + 1);
