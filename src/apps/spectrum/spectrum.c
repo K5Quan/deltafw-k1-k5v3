@@ -183,8 +183,10 @@ static uint16_t GetRegMenuValue(uint8_t st)
 
 void LockAGC()
 {
-    RADIO_SetupAGC(settings.modulationType == MODULATION_AM, lockAGC);
-    lockAGC = true;
+    //RADIO_SetupAGC(settings.modulationType == MODULATION_AM, lockAGC);
+    RADIO_SetupAGC(false, lockAGC);
+    //lockAGC = true;
+    lockAGC = false;
 }
 
 static void SetRegMenuValue(uint8_t st, bool add)
@@ -469,7 +471,8 @@ static void ToggleRX(bool on)
     #endif
     isListening = on;
 
-    RADIO_SetupAGC(settings.modulationType == MODULATION_AM, lockAGC);
+    //RADIO_SetupAGC(settings.modulationType == MODULATION_AM, lockAGC);
+    RADIO_SetupAGC(false, lockAGC);
     BK4819_ToggleGpioOut(BK4819_GPIO6_PIN2_GREEN, on);
 
     ToggleAudio(on);
@@ -915,17 +918,17 @@ uint8_t Rssi2Y(uint16_t rssi)
                 // Total width units = (bars - 1) full bars + 2 half bars = bars
                 // First bar: half width, middle bars: full width, last bar: half width
                 // Scale: 128 pixels / (bars - 1) = pixels per full bar
-                uint16_t fullWidth = 128 * 2 / (bars - 1);  // x2 for precision
+                uint16_t fullWidth = (128 << 8) / (bars - 1); // x256 for precision
                 
                 if (i == 0)
                 {
-                    x = fullWidth / 4;  // half of half (because fullWidth is x2)
+                    x = fullWidth / (2 << 8); // half of /256 (because fullWidth is x256)
                 }
                 else
                 {
                     // Position = half + (i-1) full bars + current bar
-                    x = fullWidth / 4 + (uint16_t)i * fullWidth / 2;
-                    if (i == bars - 1) x = 128;  // Last bar ends at screen edge
+                    x = fullWidth / (2 << 8) + (uint16_t)i * fullWidth / (1 << 8);
+                    if (i == bars - 1) x = 128; // Last bar ends at screen edge
                 }
             }
             else
@@ -1594,7 +1597,7 @@ static void UpdateScan()
 {
     Scan();
 
-    if (scanInfo.i < scanInfo.measurementsCount)
+    if (scanInfo.i + 1 < scanInfo.measurementsCount)
     {
         NextScanStep();
         return;
