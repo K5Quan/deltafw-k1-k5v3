@@ -181,7 +181,7 @@ enable_feature(ENABLE_DTMF_CALLING)
 # Custom Mods
 # ----------------------------------------------------------------------------
 enable_feature(ENABLE_SPECTRUM          apps/spectrum/spectrum.c)
-enable_feature(ENABLE_AM_FIX            am_fix.c)
+
 
 enable_feature(ENABLE_BIG_FREQ)
 enable_feature(ENABLE_SMALL_BOLD)
@@ -241,7 +241,7 @@ enable_feature(ENABLE_FIRMWARE_DEBUG_LOGGING)
 # ----------------------------------------------------------------------------
 # Debugging
 # ----------------------------------------------------------------------------
-enable_feature(ENABLE_AM_FIX_SHOW_DATA)
+
 enable_feature(ENABLE_AGC_SHOW_DATA)
 enable_feature(ENABLE_UART_RW_BK_REGS)
 enable_feature(ENABLE_SWD)
