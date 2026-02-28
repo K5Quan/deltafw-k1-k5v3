@@ -637,16 +637,6 @@ void MENU_AcceptSetting(void)
             #endif
             break;
 
-        case MENU_ABR_MIN:
-            gEeprom.BACKLIGHT_MIN = gSubMenuSelection;
-            gEeprom.BACKLIGHT_MAX = MAX(gSubMenuSelection + 1 , gEeprom.BACKLIGHT_MAX);
-            break;
-
-        case MENU_ABR_MAX:
-            gEeprom.BACKLIGHT_MAX = gSubMenuSelection;
-            gEeprom.BACKLIGHT_MIN = MIN(gSubMenuSelection - 1, gEeprom.BACKLIGHT_MIN);
-            break;
-
         case MENU_ABR_ON_TX_RX:
             gSetting_backlight_on_tx_rx = gSubMenuSelection;
             break;
@@ -689,6 +679,16 @@ void MENU_AcceptSetting(void)
 
         case MENU_TOT:
             gEeprom.TX_TIMEOUT_TIMER = gSubMenuSelection;
+            break;
+
+        case MENU_ABR_MIN:
+            gEeprom.BACKLIGHT_MIN = gSubMenuSelection;
+            gEeprom.BACKLIGHT_MAX = MAX(gSubMenuSelection + 1 , gEeprom.BACKLIGHT_MAX);
+            break;
+
+        case MENU_ABR_MAX:
+            gEeprom.BACKLIGHT_MAX = gSubMenuSelection;
+            gEeprom.BACKLIGHT_MIN = MIN(gSubMenuSelection - 1, gEeprom.BACKLIGHT_MIN);
             break;
 
         #ifdef ENABLE_VOICE
@@ -1187,14 +1187,6 @@ void MENU_ShowCurrentSetting(void)
             #endif
             break;
 
-        case MENU_ABR_MIN:
-            gSubMenuSelection = gEeprom.BACKLIGHT_MIN;
-            break;
-
-        case MENU_ABR_MAX:
-            gSubMenuSelection = gEeprom.BACKLIGHT_MAX;
-            break;
-
         case MENU_ABR_ON_TX_RX:
             gSubMenuSelection = gSetting_backlight_on_tx_rx;
             break;
@@ -1227,6 +1219,14 @@ void MENU_ShowCurrentSetting(void)
 
         case MENU_TOT:
             gSubMenuSelection = gEeprom.TX_TIMEOUT_TIMER;
+            break;
+
+        case MENU_ABR_MIN:
+            gSubMenuSelection = gEeprom.BACKLIGHT_MIN;
+            break;
+
+        case MENU_ABR_MAX:
+            gSubMenuSelection = gEeprom.BACKLIGHT_MAX;
             break;
 
 #ifdef ENABLE_VOICE

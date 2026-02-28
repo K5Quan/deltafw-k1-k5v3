@@ -220,6 +220,14 @@ void UI_MAIN_TimeSlice500ms(void)
 // (Function moved to features/cw.c)
 #endif
 
+// --- Flash Optimization Wrappers ---
+static void UI_PrintMainString(const char *str, uint8_t x, uint8_t y) {
+    UI_PrintString(str, x, 0, y, 8);
+}
+static void UI_PrintMainStringSmall(const char *str, uint8_t x, uint8_t y) {
+    UI_PrintStringSmallNormal(str, x, 0, y);
+}
+
 void UI_DisplayMain(void)
 {
     char               String[22];
@@ -243,8 +251,8 @@ void UI_DisplayMain(void)
 #ifndef ENABLE_CUSTOM_FIRMWARE_MODS
     if (gEeprom.KEY_LOCK && gKeypadLocked > 0)
     {   // tell user how to unlock the keyboard
-        UI_PrintString("Long press #", 0, LCD_WIDTH, 1, 8);
-        UI_PrintString("to unlock",    0, LCD_WIDTH, 3, 8);
+        UI_PrintMainString("Long press #", 0, 1);
+        UI_PrintMainString("to unlock",    0, 3);
         ST7565_BlitFullScreen();
         return;
     }
@@ -363,11 +371,11 @@ void UI_DisplayMain(void)
                     gScanRangeStart = 0;
                 }
 #else
-                UI_PrintString("ScnRng", 5, 0, line, 8);
+                UI_PrintMainString("ScnRng", 5, line);
                 UI_PrintFrequencyEx(String, gScanRangeStart, true);
-                UI_PrintStringSmallNormal(String, 56, 0, line);
+                UI_PrintMainStringSmall(String, 56, line);
                 UI_PrintFrequencyEx(String, gScanRangeStop, true);
-                UI_PrintStringSmallNormal(String, 56, 0, line + 1);
+                UI_PrintMainStringSmall(String, 56, line + 1);
                 continue;
 #endif
             }
@@ -395,7 +403,7 @@ void UI_DisplayMain(void)
                     }
                 }
 
-                UI_PrintString(pPrintStr, 2, 0, 2 + (vfo_num * 3), 8);
+                UI_PrintMainString(pPrintStr, 2, 2 + (vfo_num * 3));
 
                 pPrintStr = "";
                 if (!gDTMF_InputMode) {
@@ -435,7 +443,7 @@ void UI_DisplayMain(void)
                     continue;
                 }
 #else
-                UI_PrintString(pPrintStr, 2, 0, 0 + (vfo_num * 3), 8);
+                UI_PrintMainString(pPrintStr, 2, 0 + (vfo_num * 3));
                 center_line = CENTER_LINE_IN_USE;
                 continue;
 #endif
@@ -568,7 +576,7 @@ void UI_DisplayMain(void)
         if (state != VFO_STATE_NORMAL)
         {
             if (state < ARRAY_SIZE(VfoStateStr))
-                UI_PrintString(VfoStateStr[state], 31, 0, line, 8);
+                UI_PrintMainString(VfoStateStr[state], 31, line);
         }
         else if (gInputBoxIndex > 0 && IS_FREQ_CHANNEL(gEeprom.ScreenChannel[vfo_num]) && gEeprom.TX_VFO == vfo_num)
         {   // user entering a frequency
@@ -601,7 +609,7 @@ void UI_DisplayMain(void)
                 
                 UI_DisplayFrequencyStr(String, startX, line, false);
                 // Small digits for Hz (high precision)
-                UI_PrintStringSmallNormal(khzSmall, 113, 0, line + 1);
+                UI_PrintMainStringSmall(khzSmall, 113, line + 1);
             }
             else
             {
@@ -611,7 +619,7 @@ void UI_DisplayMain(void)
                 strcat(String, ".");
                 strcat(String, khzBig);
                 strcat(String, khzSmall);
-                UI_PrintString(String, 32, 0, line, 8);
+                UI_PrintMainString(String, 32, line);
             }
             #endif
 
@@ -667,7 +675,7 @@ void UI_DisplayMain(void)
 #ifdef ENABLE_BIG_FREQ
                         if(frequency < _1GHz_in_KHz) {
                             // show the remaining 2 small frequency digits
-                            UI_PrintStringSmallNormal(String + 7, 113, 0, line + 1);
+                            UI_PrintMainStringSmall(String + 7, 113, line + 1);
                             String[7] = 0;
 
                             // show the main large frequency digits
@@ -684,7 +692,7 @@ void UI_DisplayMain(void)
 #endif
                         {
                             // show the frequency in the main font
-                            UI_PrintString(String, 32, 0, line, 8);
+                            UI_PrintMainString(String, 32, line);
                         }
 
                         break;
@@ -692,7 +700,7 @@ void UI_DisplayMain(void)
                     case MDF_CHANNEL:   // show the channel number
                         strcpy(String, "CH-   ");
                         NUMBER_ToDecimal(String + 3, gEeprom.ScreenChannel[vfo_num] + 1, 3, true);
-                        UI_PrintString(String, 32, 0, line, 8);
+                        UI_PrintMainString(String, 32, line);
                         break;
 
                     case MDF_NAME:      // show the channel name
@@ -706,7 +714,7 @@ void UI_DisplayMain(void)
                         }
 
                         if (gEeprom.CHANNEL_DISPLAY_MODE == MDF_NAME) {
-                            UI_PrintString(String, 32, 0, line, 8);
+                            UI_PrintMainString(String, 32, line);
                         }
                         else {
                             // MDF_NAME_FREQ
@@ -717,7 +725,7 @@ void UI_DisplayMain(void)
                          
                             // Frequency - Small Normal Font
                             UI_PrintFrequencyEx(String, frequency, true);
-                            UI_PrintStringSmallNormal(String, 39, 0, line + 1);
+                            UI_PrintMainStringSmall(String, 39, line + 1);
                         }
                         break;
                 }
@@ -729,7 +737,7 @@ void UI_DisplayMain(void)
 #ifdef ENABLE_BIG_FREQ
                 if(frequency < _1GHz_in_KHz) {
                     // show the remaining 2 small frequency digits
-                    UI_PrintStringSmallNormal(String + 7, 113, 0, line + 1);
+                    UI_PrintMainStringSmall(String + 7, 113, line + 1);
                     String[7] = 0;
                     // show the main large frequency digits
                 UI_DisplayFrequencyStr(String, 32, line, false);
@@ -738,7 +746,7 @@ void UI_DisplayMain(void)
 #endif
                 {
                     // show the frequency in the main font
-                    UI_PrintString(String, 32, 0, line, 8);
+                    UI_PrintMainString(String, 32, line);
                 }
 
                 // show the channel symbols
@@ -1006,8 +1014,7 @@ void UI_DisplayMain(void)
                         UI_PrintStringSmallNormal(String, 2, 0, 3);
                     }
 #else
-                    UI_PrintStringSmallNormal(String, 2, 0, 3);
-
+                    UI_PrintMainStringSmall(String, 2, 3);
 #endif
                 }
             #else
@@ -1024,7 +1031,7 @@ void UI_DisplayMain(void)
 
                     strcpy(String, "DTMF ");
                     strcat(String, gDTMF_RX_live + idx);
-                    UI_PrintStringSmallNormal(String, 2, 0, 3);
+                    UI_PrintMainStringSmall(String, 2, 3);
                 }
             #endif
 #endif
@@ -1046,7 +1053,7 @@ void UI_DisplayMain(void)
                 NUMBER_ToDecimal(String + 10, gBatteryVoltageAverage % 100, 2, true);
                 NUMBER_ToDecimal(String + 13, BATTERY_VoltsToPercent(gBatteryVoltageAverage), 3, false);
                 
-                UI_PrintStringSmallNormal(String, 2, 0, 3);
+                UI_PrintMainStringSmall(String, 2, 3);
             }
 #endif
         }

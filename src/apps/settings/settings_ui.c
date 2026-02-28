@@ -108,6 +108,18 @@ static const SettingConfig settingConfigs[] = {
 #ifdef ENABLE_CTCSS_LEAD_IN
     {MENU_CTCSS_LEAD, SET_TYPE_BOOL, &gEeprom.CTCSS_LEAD_IN, 0, 1, gSubMenu_OFF_ON, 4},
 #endif
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
+    {MENU_SET_PTT,  SET_TYPE_LIST,  &gSetting_set_ptt, 0, 2, gSubMenu_SET_PTT, 7},
+    {MENU_SET_TOT,  SET_TYPE_LIST,  &gSetting_set_tot, 0, 3, gSubMenu_SET_TOT, 7},
+    {MENU_SET_EOT,  SET_TYPE_LIST,  &gSetting_set_eot, 0, 3, gSubMenu_SET_TOT, 7},
+    {MENU_SET_PWR,  SET_TYPE_LIST,  &gSetting_set_pwr, 0, 6, gSubMenu_SET_PWR, 6},
+    #ifdef ENABLE_DEEP_SLEEP_MODE
+    {MENU_SET_OFF,  SET_TYPE_INT8,  &gSetting_set_off, 0, 60, NULL, 0},
+    #endif
+    {MENU_TX_LOCK,  SET_TYPE_BOOL,  &gSetting_set_lck, 0, 1, gSubMenu_OFF_ON, 4},
+    {MENU_350EN,    SET_TYPE_BOOL,  &gSetting_350EN, 0, 1, gSubMenu_OFF_ON, 4},
+#endif
+    {MENU_1_CALL,   SET_TYPE_BOOL,  &gEeprom.CHAN_1_CALL, 0, 1, gSubMenu_OFF_ON, 4}, // Probably not bool but channel?
 
 };
 
@@ -249,7 +261,7 @@ static void Settings_GetValueStr(uint8_t settingId, char *buf, uint8_t bufLen) {
         case MENU_TXP: strcpy(buf, gSubMenu_TXP[gTxVfo->OUTPUT_POWER]); break;
         case MENU_SFT_D: strcpy(buf, gSubMenu_SFT_D[gTxVfo->TX_OFFSET_FREQUENCY_DIRECTION]); break;
         case MENU_W_N: strcpy(buf, gSubMenu_W_N[gTxVfo->CHANNEL_BANDWIDTH]); break;
-        case MENU_AM: strcpy(buf, gModulationStr[gTxVfo->Modulation]); break;
+        case MENU_AM:  strcpy(buf, gModulationStr[gTxVfo->Modulation]); break;
 #ifdef ENABLE_LIVESEEK
         case MENU_LIVESEEK: strcpy(buf, gSubMenu_LiveSeek[gEeprom.LIVESEEK_MODE]); break;
 #endif

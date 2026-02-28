@@ -970,6 +970,19 @@ static void HandleVox(void)
 #endif
 
 static bool gInAppUpdate = false;
+#ifdef ENABLE_CUSTOM_FIRMWARE_MODS
+static inline void APP_PttDeLatch(void) {
+    if (gPttVfoOverridden) {
+        gEeprom.TX_VFO = gPttRestoreVFO;
+        gPttVfoOverridden = false;
+        RADIO_SelectVfos();
+    }
+    #if defined(ENABLE_LCD_CONTRAST_OPTION) || defined(ENABLE_INVERTED_LCD_MODE)
+    ST7565_ContrastAndInv();
+    #endif
+}
+#endif
+
 void APP_Update(void)
 {
     if (gInAppUpdate) return;
@@ -1066,9 +1079,7 @@ void APP_Update(void)
                 //  gPttWasReleased = true;
             }
 // ------------------
-            #if defined(ENABLE_LCD_CONTRAST_OPTION) || defined(ENABLE_INVERTED_LCD_MODE)
-            ST7565_ContrastAndInv();
-            #endif
+            APP_PttDeLatch();
         }
 #endif
         if (gPttVfoOverridden) {
@@ -1365,14 +1376,7 @@ void APP_ProcessKeys(void)
                          gPttIsPressed = false;
                          gPttOnePushCounter = 3; // Wait Release state
                          gPttDebounceCounter = 0;
-                         if (gPttVfoOverridden) {
-                            gEeprom.TX_VFO = gPttRestoreVFO;
-                            gPttVfoOverridden = false;
-                            RADIO_SelectVfos();
-                         }
-                         #if defined(ENABLE_LCD_CONTRAST_OPTION) || defined(ENABLE_INVERTED_LCD_MODE)
-                         ST7565_ContrastAndInv();
-                         #endif
+                         APP_PttDeLatch();
                      }
                  }
                  // Else: Just holding (Counter=0 for normal hold, or 1 if we just started latching).
@@ -1454,14 +1458,7 @@ void APP_ProcessKeys(void)
                           
                           gPttDebounceCounter = 0;
                           
-                          if (gPttVfoOverridden) {
-                            gEeprom.TX_VFO = gPttRestoreVFO;
-                            gPttVfoOverridden = false;
-                            RADIO_SelectVfos();
-                          }
-                          #if defined(ENABLE_LCD_CONTRAST_OPTION) || defined(ENABLE_INVERTED_LCD_MODE)
-                          ST7565_ContrastAndInv();
-                          #endif
+                          APP_PttDeLatch();
                       }
                  }
              } 
@@ -1485,14 +1482,7 @@ void APP_ProcessKeys(void)
                          gPttIsPressed = false;
                          gPttOnePushCounter = 3; // Wait Release
                          gPttDebounceCounter = 0;
-                         if (gPttVfoOverridden) {
-                            gEeprom.TX_VFO = gPttRestoreVFO;
-                            gPttVfoOverridden = false;
-                            RADIO_SelectVfos();
-                         }
-                         #if defined(ENABLE_LCD_CONTRAST_OPTION) || defined(ENABLE_INVERTED_LCD_MODE)
-                         ST7565_ContrastAndInv();
-                         #endif
+                         APP_PttDeLatch();
                      }
                  } else {
                     // Holding press (Counter=1). Do nothing.
@@ -1582,14 +1572,7 @@ void APP_ProcessKeys(void)
                     ProcessKey(KEY_PTT, false, false);
                     gPttIsPressed = false;
                     gPttDebounceCounter = 0;
-                    if (gPttVfoOverridden) {
-                        gEeprom.TX_VFO = gPttRestoreVFO;
-                        gPttVfoOverridden = false;
-                        RADIO_SelectVfos();
-                    }
-                    #if defined(ENABLE_LCD_CONTRAST_OPTION) || defined(ENABLE_INVERTED_LCD_MODE)
-                    ST7565_ContrastAndInv();
-                    #endif
+                    APP_PttDeLatch();
                 }
             } else {
                 gPttDebounceCounter = 0;

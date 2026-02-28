@@ -702,7 +702,7 @@ void UI_DisplayMenu(void)
     switch (UI_MENU_GetCurrentMenuId())
     {
         case MENU_SQL:
-            NUMBER_ToDecimal(String, gSubMenuSelection, 1, false);
+             // Moved to grouped block
             break;
 
         case MENU_LIVESEEK:
@@ -719,9 +719,7 @@ void UI_DisplayMenu(void)
             }
             break;
 
-        case MENU_MIC_AGC:
-            strcpy(String, gSubMenu_OFF_ON[gSubMenuSelection]);
-            break;
+
 
         case MENU_VOL_GAIN:
             NUMBER_ToDecimal(String, gSubMenuSelection, 2, true);
@@ -730,13 +728,7 @@ void UI_DisplayMenu(void)
             gaugeMax = 63;
             break;
 
-        case MENU_MIC_BAR:
-            #ifdef ENABLE_MIC_BAR
-                strcpy(String, gSubMenu_OFF_ON[gSubMenuSelection]);
-            #else
-                strcpy(String, gSubMenu_NA);
-            #endif
-            break;
+
 
         case MENU_STEP: {
             uint16_t step = gStepFrequencyTable[FREQUENCY_GetStepIdxFromSortedIdx(gSubMenuSelection)];
@@ -861,19 +853,13 @@ void UI_DisplayMenu(void)
             }
             else if(gSubMenuSelection < 61)
             {
-                // sprintf(String, "%02dm:%02ds", (((gSubMenuSelection) * 5) / 60), (((gSubMenuSelection) * 5) % 60));
+
+                strcpy(String, "  m:  s");
                 NUMBER_ToDecimal(String, ((gSubMenuSelection) * 5) / 60, 2, true);
-                String[2] = 'm';
-                String[3] = ':';
                 NUMBER_ToDecimal(String + 4, ((gSubMenuSelection) * 5) % 60, 2, true);
-                String[6] = 's';
-                String[7] = '\0';
-                //#if !defined(ENABLE_SPECTRUM) || !defined(ENABLE_FMRADIO)
-                //ST7565_Gauge(4, 1, 60, gSubMenuSelection);
                 gaugeLine = 4;
                 gaugeMin = 1;
                 gaugeMax = 60;
-                //#endif
             }
             else
             {
@@ -887,13 +873,7 @@ void UI_DisplayMenu(void)
 
         case MENU_ABR_MIN:
         case MENU_ABR_MAX:
-            // sprintf(String, "%d", gSubMenuSelection);
-            NUMBER_ToDecimal(String, gSubMenuSelection, 2, false);
-            if(gIsInSubMenu)
-                BACKLIGHT_SetBrightness(gSubMenuSelection);
-            // Obsolete ???
-            //else if(BACKLIGHT_GetBrightness() < 4)
-            //    BACKLIGHT_SetBrightness(4);
+             // Moved to grouped block
             break;
 
         case MENU_AM:
@@ -907,19 +887,12 @@ void UI_DisplayMenu(void)
             }
             else
             {
-                // sprintf(String, "%02dm:%02ds", ((gSubMenuSelection * 15) / 60), ((gSubMenuSelection * 15) % 60));
+                strcpy(String, "  m:  s");
                 NUMBER_ToDecimal(String, (gSubMenuSelection * 15) / 60, 2, true);
-                String[2] = 'm';
-                String[3] = ':';
                 NUMBER_ToDecimal(String + 4, (gSubMenuSelection * 15) % 60, 2, true);
-                String[6] = 's';
-                String[7] = '\0';
-                //#if !defined(ENABLE_SPECTRUM) || !defined(ENABLE_FMRADIO)
-                //ST7565_Gauge(4, 1, 40, gSubMenuSelection);
                 gaugeLine = 4;
                 gaugeMin = 1;
                 gaugeMax = 40;
-                //#endif
             }
             break;
 
@@ -956,8 +929,20 @@ void UI_DisplayMenu(void)
         case MENU_SCREN:
 #ifdef ENABLE_CUSTOM_FIRMWARE_MODS
         case MENU_SET_TMR:
+        case MENU_SET_INV:
+        case MENU_SET_NAV:
+        case MENU_TX_LOCK:
 #endif
-            strcpy(String, gSubMenu_OFF_ON[gSubMenuSelection]);
+        case MENU_MIC_AGC:
+        case MENU_MIC_BAR:
+            #ifdef ENABLE_MIC_BAR
+                strcpy(String, gSubMenu_OFF_ON[gSubMenuSelection]);
+            #else
+                if (UI_MENU_GetCurrentMenuId() == MENU_MIC_BAR)
+                    strcpy(String, gSubMenu_NA);
+                else
+                    strcpy(String, gSubMenu_OFF_ON[gSubMenuSelection]);
+            #endif
             break;
 
         case MENU_MEM_CH:
@@ -1038,19 +1023,12 @@ void UI_DisplayMenu(void)
             break;
 
         case MENU_TOT:
-            // sprintf(String, "%02dm:%02ds", (((gSubMenuSelection + 1) * 5) / 60), (((gSubMenuSelection + 1) * 5) % 60));
+            strcpy(String, "  m:  s");
             NUMBER_ToDecimal(String, ((gSubMenuSelection + 1) * 5) / 60, 2, true);
-            String[2] = 'm';
-            String[3] = ':';
             NUMBER_ToDecimal(String + 4, ((gSubMenuSelection + 1) * 5) % 60, 2, true);
-            String[6] = 's';
-            String[7] = '\0';
-            //#if !defined(ENABLE_SPECTRUM) || !defined(ENABLE_FMRADIO)
-            //ST7565_Gauge(4, 5, 179, gSubMenuSelection);
             gaugeLine = 4;
             gaugeMin = 5;
             gaugeMax = 179;
-            //#endif
             break;
 
         #ifdef ENABLE_VOICE
@@ -1152,8 +1130,18 @@ void UI_DisplayMenu(void)
             break;
 
         case MENU_D_HOLD:
+        case MENU_ABR_MIN:
+        case MENU_ABR_MAX:
+        case MENU_SQL:
             NUMBER_ToDecimal(String, gSubMenuSelection, 2, false);
-            strcat(String, "s");
+            if(UI_MENU_GetCurrentMenuId() == MENU_D_HOLD)
+            {
+                strcat(String, "s");
+            }
+            else if((UI_MENU_GetCurrentMenuId() == MENU_ABR_MIN || UI_MENU_GetCurrentMenuId() == MENU_ABR_MAX) && gIsInSubMenu)
+            {
+                BACKLIGHT_SetBrightness(gSubMenuSelection);
+            }
             break;
 #endif
         case MENU_D_PRE:
@@ -1269,17 +1257,12 @@ void UI_DisplayMenu(void)
             }
             else if(gSubMenuSelection < 121)
             {
-                // sprintf(String, "%dh:%02dm", (gSubMenuSelection / 60), (gSubMenuSelection % 60));
+                strcpy(String, "  h:  m");
                 NUMBER_ToDecimal(String, gSubMenuSelection / 60, 2, false);
-                strcat(String, "h:");
-                NUMBER_ToDecimal(String + strlen(String), gSubMenuSelection % 60, 2, true);
-                strcat(String, "m");
-                //#if !defined(ENABLE_SPECTRUM) || !defined(ENABLE_FMRADIO)
-                //ST7565_Gauge(4, 1, 120, gSubMenuSelection);
+                NUMBER_ToDecimal(String + 4, gSubMenuSelection % 60, 2, true);
                 gaugeLine = 4;
                 gaugeMin = 1;
                 gaugeMax = 120;
-                //#endif
             }
             break;
 #endif
@@ -1312,33 +1295,15 @@ void UI_DisplayMenu(void)
             #endif
             break;
 
-        case MENU_SET_INV:
-            #ifdef ENABLE_INVERTED_LCD_MODE
-                strcpy(String, gSubMenu_OFF_ON[gSubMenuSelection]);
-                ST7565_ContrastAndInv();
-            #else
-                strcpy(String, gSubMenu_NA);
-            #endif
-            break;
+        // Set inv case handled above
 
-        case MENU_TX_LOCK:
-            if(TX_freq_check(gEeprom.VfoInfo[gEeprom.TX_VFO].pTX->Frequency) == 0)
-            {
-                strcpy(String, "Inside F Lock Plan");
-            }
-            else
-            {
-                strcpy(String, gSubMenu_OFF_ON[gSubMenuSelection]);
-            }
-            break;
+        // Tx lock handled above
 
         case MENU_SET_LCK:
             strcpy(String, gSubMenu_SET_LCK[gSubMenuSelection]);
             break;
 
-        case MENU_SET_NAV:
-            strcpy(String, gSubMenu_OFF_ON[gSubMenuSelection]);
-            break;
+        // Set nav handled above
 
 
         #ifdef ENABLE_NARROWER_BW_FILTER
