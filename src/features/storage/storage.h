@@ -11,38 +11,48 @@ typedef enum {
 } StorageEnc_t;
 
 #define STORAGE_RECORDS(X) \
-    /* NAME,           ENC,       TYPE,    ADDR,     SZ,  C1,  S1,   C2, S2 */ \
-    X(SETTINGS_MAIN,   ENC_CPUID, FIXED,  0x004000, 16,  1,   0,    0,  0) \
-    X(VFO_INDICES,     ENC_CPUID, FIXED,  0x005000, 8,   1,   0,    0,  0) \
-    X(AUDIO_SETTINGS,  ENC_CPUID, FIXED,  0x00A000, 8,   1,   0,    0,  0) \
-    X(FM_CONFIG,       ENC_CPUID, FIXED,  0x006000, 8,   1,   0,    0,  0) \
-    X(FM_CHANNELS,     ENC_CPUID, FIXED,  0x003000, 0x50,1,   0,    0,  0) \
-    X(SETTINGS_EXTRA,  ENC_CPUID, FIXED,  0x007000, 80,  1,   0,    0,  0) \
-    X(ANI_DTMF_ID,     ENC_CPUID, FIXED,  0x008000, 8,   1,   0,    0,  0) \
-    X(KILL_CODE,       ENC_CPUID, FIXED,  0x008008, 8,   1,   0,    0,  0) \
-    X(REVIVE_CODE,     ENC_CPUID, FIXED,  0x008010, 8,   1,   0,    0,  0) \
-    X(DTMF_UP_CODE,    ENC_CPUID, FIXED,  0x008018, 16,  1,   0,    0,  0) \
-    X(DTMF_DOWN_CODE,  ENC_CPUID, FIXED,  0x008028, 16,  1,   0,    0,  0) \
-    X(SCAN_LIST,       ENC_CPUID, FIXED,  0x009000, 8,   1,   0,    0,  0) \
-    X(F_LOCK,          ENC_CPUID, FIXED,  0x00b000, 10,  1,   0,    0,  0) \
-    X(MR_ATTRIBUTES,   ENC_PASSCODE, LINEAR, 0x002000, 1,   207, 1,    0,  0) \
-    X(CUSTOM_SETTINGS, ENC_CPUID, FIXED,  0x00c000, 8,   1,   0,    0,  0) \
-    X(CHANNEL_DATA,    ENC_PASSCODE, LINEAR, 0x000000, 16,  200, 16,   0,  0) \
-    X(CHANNEL_NAMES,   ENC_PASSCODE, LINEAR, 0x00e000, 16,  200, 16,   0,  0) \
-    X(VFO_DATA,        ENC_PASSCODE, DIM2,   0x001000, 16,  8,   32,   2,  16) \
-    X(DTMF_CONTACTS,   ENC_CPUID, LINEAR, 0x00f000, 16,  16,  16,   0,  0) \
-    X(CALIB_RSSI_3,    ENC_PLAIN, FIXED,  0x0100C0, 8,   1,   0,    0,  0) \
-    X(CALIB_RSSI_0,    ENC_PLAIN, FIXED,  0x0100C8, 8,   1,   0,    0,  0) \
-    X(CALIB_BATTERY,   ENC_PLAIN, FIXED,  0x010140, 12,  1,   0,    0,  0) \
-    X(CALIB_VOX1,      ENC_PLAIN, LINEAR, 0x010150, 2,   6,   2,    0,  0) \
-    X(CALIB_VOX0,      ENC_PLAIN, LINEAR, 0x010168, 2,   6,   2,    0,  0) \
-    X(CALIB_MISC,      ENC_PLAIN, FIXED,  0x010188, 8,   1,   0,    0,  0) \
-    X(CALIB_TX_POWER,  ENC_PLAIN, DIM2,   0x0100D0, 3,   7,   16,   3,  3) \
-    X(CALIB_SQUELCH,   ENC_PLAIN, DIM2,   0x010000, 1,   2,   0x60, 10, 1) \
-    X(VOICE_PROMPT_DATA, ENC_PLAIN, LINEAR, 0x14C000, 0,   2,   0x800,0,  0) \
-    X(VOICE_CLIP_DATA, ENC_PLAIN, LINEAR, 0x14D000, 0,   0xFFFF, 1, 0,  0) \
-    X(CUSTOM_ROGER,    ENC_CPUID, FIXED,  0x007050, 96,  1,   0,    0,  0) \
-    X(PASSCODE,        ENC_PLAIN, FIXED,  0x007100, 128, 1,   0,    0,  0)
+    /* NAME,              ENC,           TYPE,    ADDR,      SZ,  C1,     S1,     C2, S2 */ \
+    /* --- Channels & VFO --- */ \
+    X(CHANNEL_DATA,       ENC_PASSCODE,  LINEAR,  0x000000,  16,  200,    16,     0,  0) \
+    X(VFO_DATA,           ENC_PASSCODE,  DIM2,    0x001000,  16,  8,      32,     2,  16) \
+    X(MR_ATTRIBUTES,      ENC_PASSCODE,  LINEAR,  0x002000,  1,   207,    1,      0,  0) \
+    /* --- FM Radio --- */ \
+    X(FM_CHANNELS,        ENC_CPUID,     FIXED,   0x003000,  0x50,1,      0,      0,  0) \
+    X(FM_CONFIG,          ENC_CPUID,     FIXED,   0x006000,  8,   1,      0,      0,  0) \
+    /* --- Global Settings --- */ \
+    X(SETTINGS_MAIN,      ENC_CPUID,     FIXED,   0x004000,  16,  1,      0,      0,  0) \
+    X(VFO_INDICES,        ENC_CPUID,     FIXED,   0x005000,  8,   1,      0,      0,  0) \
+    X(SETTINGS_EXTRA,     ENC_CPUID,     FIXED,   0x007000,  80,  1,      0,      0,  0) \
+    X(CUSTOM_ROGER,       ENC_CPUID,     FIXED,   0x007050,  96,  1,      0,      0,  0) \
+    X(PASSCODE,           ENC_PLAIN,     FIXED,   0x007100,  128, 1,      0,      0,  0) \
+    /* --- DTMF Codes --- */ \
+    X(ANI_DTMF_ID,        ENC_CPUID,     FIXED,   0x008000,  8,   1,      0,      0,  0) \
+    X(KILL_CODE,          ENC_CPUID,     FIXED,   0x008008,  8,   1,      0,      0,  0) \
+    X(REVIVE_CODE,        ENC_CPUID,     FIXED,   0x008010,  8,   1,      0,      0,  0) \
+    X(DTMF_UP_CODE,       ENC_CPUID,     FIXED,   0x008018,  16,  1,      0,      0,  0) \
+    X(DTMF_DOWN_CODE,     ENC_CPUID,     FIXED,   0x008028,  16,  1,      0,      0,  0) \
+    /* --- Scan & Audio --- */ \
+    X(SCAN_LIST,          ENC_CPUID,     FIXED,   0x009000,  8,   1,      0,      0,  0) \
+    X(AUDIO_SETTINGS,     ENC_CPUID,     FIXED,   0x00A000,  8,   1,      0,      0,  0) \
+    X(F_LOCK,             ENC_CPUID,     FIXED,   0x00b000,  10,  1,      0,      0,  0) \
+    X(CUSTOM_SETTINGS,    ENC_CPUID,     FIXED,   0x00c000,  8,   1,      0,      0,  0) \
+    /* --- Extended Data --- */ \
+    X(CHANNEL_NAMES,      ENC_PASSCODE,  LINEAR,  0x00e000,  16,  200,    16,     0,  0) \
+    X(DTMF_CONTACTS,      ENC_CPUID,     LINEAR,  0x00f000,  16,  16,     16,     0,  0) \
+    /* --- Calibration Data --- */ \
+    X(CALIB_SQUELCH,      ENC_PLAIN,     DIM2,    0x010000,  1,   2,      0x60,   10, 1) \
+    X(CALIB_RSSI_3,       ENC_PLAIN,     FIXED,   0x0100C0,  8,   1,      0,      0,  0) \
+    X(CALIB_RSSI_0,       ENC_PLAIN,     FIXED,   0x0100C8,  8,   1,      0,      0,  0) \
+    X(CALIB_TX_POWER,     ENC_PLAIN,     DIM2,    0x0100D0,  3,   7,      16,     3,  3) \
+    X(CALIB_BATTERY,      ENC_PLAIN,     FIXED,   0x010140,  12,  1,      0,      0,  0) \
+    X(CALIB_VOX1,         ENC_PLAIN,     LINEAR,  0x010150,  2,   6,      2,      0,  0) \
+    X(CALIB_VOX0,         ENC_PLAIN,     LINEAR,  0x010168,  2,   6,      2,      0,  0) \
+    X(CALIB_MISC,         ENC_PLAIN,     FIXED,   0x010188,  8,   1,      0,      0,  0) \
+    /* --- Voice & High Capacity Data --- */ \
+    X(VOICE_PROMPT_DATA,  ENC_PLAIN,     LINEAR,  0x14C000,  0,   2,      0x800,  0,  0) \
+    X(VOICE_CLIP_DATA,    ENC_PLAIN,     LINEAR,  0x14D000,  0,   0xFFFF, 1,      0,  0) \
+    /* --- CW Keyer --- */ \
+    X(CW_SETTINGS,        ENC_PLAIN,     FIXED,   0x150000,  256, 1,      0,      0,  0)
 
 
 typedef enum {
@@ -270,7 +280,7 @@ typedef union {
     uint8_t raw[8];
 } __attribute__((packed)) CalibrationMisc_t;
 
-// Schema for REC_PASSCODE (64 bytes, 0x007100)
+// Schema for REC_PASSCODE (128 bytes, 0x007100)
 typedef union {
     struct {
         uint32_t Magic;         // 0x47415350 "GSAP"
@@ -288,6 +298,33 @@ typedef union {
     } fields;
     uint8_t raw[128];
 } __attribute__((packed)) PasscodeConfig_t;
+
+// Schema for REC_CW_SETTINGS (256 bytes, 0x150000)
+typedef union {
+    struct {
+        uint16_t Magic;         // 0x4357 "CW"
+        uint8_t  WPM;           // Words Per Minute (e.g. 15-40)
+        uint16_t ToneFreqHz;    // Sidetone/Offset Frequency (e.g. 650)
+        uint8_t  DecodeMode;    // 0=Off, 1=TX, 2=RX, 3=TX/RX
+        uint8_t  AutoSpacing;   // 1=Auto gap insertion
+        char     Callsign[9];   // Max 8 chars + null
+        char     Macros[8][17]; // 8 custom macro slots, max 16 chars + null
+        
+        // Advanced Keyer Settings
+        uint8_t  KeyerMode;     // 0:Straight, 1:Iambic A, 2:Iambic B, 3:Ultimatic, 4:Bug
+        uint8_t  Weighting;     // 30 = 3.0 ratio. Range 25-45
+        uint8_t  FarnsworthWPM; // 0 = disabled, else spacing WPM
+        uint8_t  TxDelayMs;     // Delay between RF on and Audio on
+        bool     ReversePaddles;// Swap Dot and Dash sidekeys
+        
+        uint8_t  Reserved1;
+        uint8_t  OutputMode;    // 0: RF, 1: Flashlight, 2: Trainer
+        bool     SidetoneEnabled;
+        
+        uint8_t  Reserved[93];  // Future expansion (100 - 7 used bytes = 93)
+    } fields;
+    uint8_t raw[256];
+} __attribute__((packed)) CWSettings_t;
 
 
 

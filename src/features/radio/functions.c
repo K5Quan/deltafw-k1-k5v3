@@ -38,6 +38,10 @@
 #include "ui/status.h"
 #include "ui/ui.h"
 
+#ifdef ENABLE_CW_KEYER
+#include "features/cw/cw.h"
+#endif
+
 #ifdef ENABLE_TX_SOFT_START
 #include "features/tx/tx_soft_start.h"
 #endif
@@ -216,12 +220,21 @@ void FUNCTION_Transmit()
 
     GUI_DisplayScreen();
 
-    RADIO_SetTxParameters();
+    // CW: key an unmodulated carrier with PTT.
+    // The VFO modulation stays MODULATION_CW for UI, but TX hardware is forced to FM with AF muted.
+    const bool isCw = (gCurrentVfo != NULL && gCurrentVfo->Modulation == MODULATION_CW);
+    if (isCw) {
+#ifdef ENABLE_CW_KEYER
+        CW_SetupTXHardware();
+#endif
+    } else {
+        RADIO_SetTxParameters();
+    }
+
 
     // CUSTOM: Ensure Green is OFF and RED is ON for Transmit
     BK4819_ToggleGpioOut(BK4819_GPIO6_PIN2_GREEN, false);
     BK4819_ToggleGpioOut(BK4819_GPIO5_PIN1_RED, true);
-
 #ifdef ENABLE_CTCSS_LEAD_IN
     CTCSS_LEAD_Start();
 #endif
@@ -233,10 +246,12 @@ void FUNCTION_Transmit()
     TX_COMPRESSOR_Start();
 #endif
 
-    DTMF_Reply();
+    if (!isCw) {
+        DTMF_Reply();
 
-    if (gCurrentVfo->DTMF_PTT_ID_TX_MODE == PTT_ID_APOLLO)
-        BK4819_PlaySingleTone(2525, 250, 0, gEeprom.DTMF_SIDE_TONE);
+        if (gCurrentVfo->DTMF_PTT_ID_TX_MODE == PTT_ID_APOLLO)
+            BK4819_PlaySingleTone(2525, 250, 0, gEeprom.DTMF_SIDE_TONE);
+    }
 
 #if defined(ENABLE_ALARM) || defined(ENABLE_TX1750)
     if (gAlarmState != ALARM_STATE_OFF) {
@@ -263,8 +278,7 @@ void FUNCTION_Transmit()
 
 #ifdef ENABLE_CW_KEYER
     // CW mode: TX is managed by CW module via queue, not here
-    if (gTxVfo->Modulation == MODULATION_CW) {
-        // CW module will set up tone after FUNCTION_Transmit is selected
+    if (isCw) {
         return;
     }
 #endif

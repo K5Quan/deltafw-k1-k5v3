@@ -233,11 +233,6 @@ void UI_DisplayMain(void)
     char               String[22];
 
     center_line = CENTER_LINE_NONE;
-#ifdef ENABLE_CW_KEYER
-    if (gTxVfo->Modulation == MODULATION_CW || gRxVfo->Modulation == MODULATION_CW) {
-        CW_DisplayMain();
-    }
-#endif
 
     // clear the screen
     UI_DisplayClear();
@@ -891,34 +886,41 @@ void UI_DisplayMain(void)
 
         // Rendering with dynamic spacing
         if (nLabels > 0) {
-            uint16_t charW = 0;
-            for (uint8_t i = 0; i < nLabels; i++) {
-                charW += strlen(labels[i]) * 4;
-            }
+#ifdef ENABLE_CW_KEYER
+            if (vfoInfo->Modulation == MODULATION_CW) {
+                UI_DisplayCW_VFO(vfo_num, line + 2);
+            } else
+#endif
+            {
+                uint16_t charW = 0;
+                for (uint8_t i = 0; i < nLabels; i++) {
+                    charW += strlen(labels[i]) * 4;
+                }
 
-            // Available range: X=6 to X=118 (internal area)
-            // Preferred gap: 10px (wide/loose)
-            int16_t gap = 10;
-            uint16_t totalW;
-            
-            // Shrink gap if necessary to fit in 112px
-            while (gap > 2) {
+                // Available range: X=6 to X=118 (internal area)
+                // Preferred gap: 10px (wide/loose)
+                int16_t gap = 10;
+                uint16_t totalW;
+                
+                // Shrink gap if necessary to fit in 112px
+                while (gap > 2) {
+                    totalW = charW + (gap * (nLabels - 1));
+                    if (totalW <= 112) break;
+                    gap--;
+                }
                 totalW = charW + (gap * (nLabels - 1));
-                if (totalW <= 112) break;
-                gap--;
-            }
-            totalW = charW + (gap * (nLabels - 1));
 
-            // Target center X=58 (balanced slightly left)
-            int16_t x = 58 - (totalW / 2);
+                // Target center X=58 (balanced slightly left)
+                int16_t x = 58 - (totalW / 2);
 
-            // Bounds check
-            if (x < 6) x = 6;
-            if (x + totalW > 118) x = 118 - totalW;
+                // Bounds check
+                if (x < 6) x = 6;
+                if (x + totalW > 118) x = 118 - totalW;
 
-            for (uint8_t i = 0; i < nLabels; i++) {
-                UI_PrintStringSmallest(labels[i], (uint8_t)x, (line + 2) * 8 + 1, false, true);
-                x += strlen(labels[i]) * 4 + gap;
+                for (uint8_t i = 0; i < nLabels; i++) {
+                    UI_PrintStringSmallest(labels[i], (uint8_t)x, (line + 2) * 8 + 1, false, true);
+                    x += strlen(labels[i]) * 4 + gap;
+                }
             }
         }
 
@@ -935,18 +937,23 @@ void UI_DisplayMain(void)
 
     if (center_line == CENTER_LINE_NONE)
     {   // we're free to use the middle line
+#ifdef ENABLE_CW_KEYER
+        if (gTxVfo->Modulation == MODULATION_CW || gRxVfo->Modulation == MODULATION_CW) {
+            UI_DisplayCW_Center(3);
+            center_line = CENTER_LINE_IN_USE;
+        }
+#endif
 
         const bool rx = FUNCTION_IsRx();
 
 #ifdef ENABLE_MIC_BAR
         if (gSetting_mic_bar && gCurrentFunction == FUNCTION_TRANSMIT) {
-            if (
 #ifdef ENABLE_CW_KEYER
-                gRxVfo->Modulation != MODULATION_CW
-#else
-                true
+            if (gRxVfo->Modulation == MODULATION_CW || gTxVfo->Modulation == MODULATION_CW) {
+                // Mic bar hidden during CW TX.
+            } else
 #endif
-            ) {
+            {
                 center_line = CENTER_LINE_MIC_BAR;
                 UI_DisplayAudioBar();
             }
@@ -973,13 +980,13 @@ void UI_DisplayMain(void)
 
 #ifdef ENABLE_RSSI_BAR
         if (rx) {
-            if (
 #ifdef ENABLE_CW_KEYER
-                gRxVfo->Modulation != MODULATION_CW
-#else
-                true
+            if (gRxVfo->Modulation == MODULATION_CW || gTxVfo->Modulation == MODULATION_CW) {
+                center_line = CENTER_LINE_IN_USE;
+                UI_DisplayCW_Center(3);
+            } else
 #endif
-            ) {
+            {
                 center_line = CENTER_LINE_RSSI;
                 UI_DisplayRSSIBar(false);
             }
@@ -1061,9 +1068,7 @@ void UI_DisplayMain(void)
 #ifdef ENABLE_CW_KEYER
     else if (center_line == CENTER_LINE_CW)
     {
-#ifdef ENABLE_CW_KEYER
-        UI_DisplayCW(isMainOnly() ? 5 : 3);
-#endif
+        UI_DisplayCW_Center(3);
     }
 #endif
 

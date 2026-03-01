@@ -109,7 +109,9 @@ void Main(void)
 #endif
 
 #ifdef ENABLE_ANTENNA_SIGNAL_BAR
-    SIGNAL_QUALITY_Init();
+#ifdef ENABLE_SIGNAL_CLASSIFIER
+    SIGNAL_CLASSIFIER_Init();
+#endif
 #endif
 
 

@@ -22,6 +22,7 @@
 #include "apps/settings/settings.h"
 #include "ui/helper.h"
 #include "ui/main.h"
+#include "drivers/bsp/systick.h"
 #include "features/radio/functions.h"
 #include <stdlib.h>
 

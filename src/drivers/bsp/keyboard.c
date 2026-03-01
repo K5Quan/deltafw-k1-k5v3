@@ -123,6 +123,9 @@ KEY_Code_t KEYBOARD_Poll(void)
             break;
     }
 
+    // Cleanup: Set all columns HIGH so they don't interfere with other GPIO polling
+    GPIO_SetOutputPin(PIN_COLS);
+
     return Key;
 }
 

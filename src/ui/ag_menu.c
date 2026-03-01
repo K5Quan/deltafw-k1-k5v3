@@ -47,7 +47,11 @@ static void renderItem(uint16_t index, uint8_t i) {
   const uint8_t baseline_y = y + active_menu->itemHeight - (active_menu->itemHeight >= MENU_ITEM_H ? 3 : 2);
 
   char label[32]; // Buffer to hold the formatted string
-  strcpy(label, item->name);
+  if (item->get_name) {
+    item->get_name(item, label, sizeof(label));
+  } else {
+    strcpy(label, item->name);
+  }
   strcat(label, item->submenu ? " >" : "  ");
   renderFn(3, baseline_y, label);
 
@@ -167,7 +171,7 @@ void AG_MENU_Render(void) {
               }
           } else {
               const uint8_t rw = ex - 4 - active_menu->x;
-              if (is_pressed) {
+              if (is_pressed || active_menu->is_held) {
                   AG_DrawRect(active_menu->x, y, rw, active_menu->itemHeight, C_FILL);
               } else {
                   AG_FillRect(active_menu->x, y, rw, active_menu->itemHeight, C_INVERT);
@@ -244,7 +248,13 @@ bool AG_MENU_HandleInput(KEY_Code_t key, bool key_pressed, bool key_held) {
   if (!key_pressed && !key_held) {
       if (is_pressed) {
           is_pressed = false;
-          // Fall through to let action/switch handle the release if needed
+          // Let action handle the release if needed
+          if (hasItems) {
+              const MenuItem *item = &active_menu->items[active_menu->i];
+              if (item->action) {
+                  item->action(item, key, false, false);
+              }
+          }
       } else {
           // Consume release if we didn't see the press, to prevent passthrough
           if (key == KEY_PTT || key == KEY_MENU || key == KEY_EXIT) return true;

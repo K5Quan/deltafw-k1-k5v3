@@ -45,6 +45,10 @@ enum GUI_DisplayType_t
     DISPLAY_HEXDUMP,
 #endif
 
+#ifdef ENABLE_CW_KEYER
+    DISPLAY_CW_KEYER,
+#endif
+
     DISPLAY_N_ELEM,
     DISPLAY_INVALID = 0xFFu
 };

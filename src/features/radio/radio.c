@@ -33,6 +33,9 @@
 #include "features/storage/storage.h"
 #include "apps/settings/settings.h"
 #include "ui/menu.h"
+#ifdef ENABLE_CW_KEYER
+#include "features/cw/cw.h"
+#endif
 
 VFO_Info_t    *gTxVfo;
 VFO_Info_t    *gRxVfo;
@@ -839,14 +842,27 @@ void RADIO_SetupRegisters(bool switchToForeground)
     #endif
     
 
-    BK4819_SetFrequency(Frequency);
+    uint32_t RadioFrequency = Frequency;
+#ifdef ENABLE_CW_KEYER
+    if (gRxVfo->Modulation == MODULATION_CW) {
+        // CW RX uses USB demod with an audio tone of CW_TONE_FREQ_HZ
+        const uint32_t cwOffset_10Hz = CW_TONE_FREQ_HZ / 10;
+        if (RadioFrequency > cwOffset_10Hz) {
+            RadioFrequency -= cwOffset_10Hz;
+        } else {
+            RadioFrequency = 0;
+        }
+    }
+#endif
+
+    BK4819_SetFrequency(RadioFrequency);
 
     BK4819_SetupSquelch(
         gRxVfo->SquelchOpenRSSIThresh,    gRxVfo->SquelchCloseRSSIThresh,
         gRxVfo->SquelchOpenNoiseThresh,   gRxVfo->SquelchCloseNoiseThresh,
         gRxVfo->SquelchCloseGlitchThresh, gRxVfo->SquelchOpenGlitchThresh);
 
-    BK4819_PickRXFilterPathBasedOnFrequency(Frequency);
+    BK4819_PickRXFilterPathBasedOnFrequency(RadioFrequency);
 
     // what does this in do ?
     BK4819_ToggleGpioOut(BK4819_GPIO0_PIN28_RX_ENABLE, true);
@@ -1145,7 +1161,8 @@ void RADIO_SetModulation(ModulationMode_t modulation)
 #endif
 #ifdef ENABLE_CW_KEYER
         case MODULATION_CW:
-            mod = BK4819_AF_UNKNOWN3;
+            // CW RX reuses USB demod; the RX frequency shift is handled elsewhere.
+            mod = BK4819_AF_BASEBAND2;
             break;
 #endif
     }
@@ -1193,12 +1210,9 @@ void RADIO_SetModulation(ModulationMode_t modulation)
     }
     
     BK4819_SetRegValue(afDacGainRegSpec, 0xF);
-    bool isBypassingFilter = (modulation == MODULATION_USB);
+    bool isBypassingFilter = (modulation == MODULATION_USB || modulation == MODULATION_CW);
 #ifdef ENABLE_BYP_RAW_DEMODULATORS
     isBypassingFilter |= (modulation == MODULATION_DSB || modulation == MODULATION_BYP || modulation == MODULATION_RAW);
-#endif
-#ifdef ENABLE_CW_KEYER
-    isBypassingFilter |= (modulation == MODULATION_CW);
 #endif
 
     BK4819_WriteRegister(BK4819_REG_3D, isBypassingFilter ? 0 : 0x2AAB);
@@ -1308,8 +1322,8 @@ void RADIO_PrepareTX(void)
         State = VFO_STATE_VOLTAGE_HIGH;
     }
 #ifndef ENABLE_TX_NON_FM
-    else if (gCurrentVfo->Modulation != MODULATION_FM) {
-        // not allowed to TX if in AM mode
+    else if (gCurrentVfo->Modulation != MODULATION_FM && gCurrentVfo->Modulation != MODULATION_CW) {
+        // not allowed to TX if in AM/USB mode
         State = VFO_STATE_TX_DISABLE;
     }
 #endif
@@ -1378,7 +1392,6 @@ void RADIO_PrepareTX(void)
     
     gFlagEndTransmission = false;
     gRTTECountdown_10ms  = 0;
-
 #ifdef ENABLE_DTMF_CALLING
     gDTMF_ReplyState     = DTMF_REPLY_NONE;
 #endif
@@ -1401,6 +1414,13 @@ void RADIO_SendCssTail(void)
 
 void RADIO_SendEndOfTransmission(void)
 {
+#ifdef ENABLE_CW_KEYER
+    if (gCurrentVfo != NULL && gCurrentVfo->Modulation == MODULATION_CW) {
+        // Handled entirely by CW_StopTXHardware now
+        return;
+    }
+#endif
+
     BK4819_PlayRoger();
     DTMF_SendEndOfTransmission();
 

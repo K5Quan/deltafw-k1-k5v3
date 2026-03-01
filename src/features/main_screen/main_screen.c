@@ -98,6 +98,23 @@ static void processFKeyFunction(const KEY_Code_t Key, const bool beep)
 {
     uint8_t Vfo = gEeprom.TX_VFO;
 
+#ifdef ENABLE_CW_KEYER
+    if (gTxVfo->Modulation == MODULATION_CW) {
+        if (Key >= KEY_1 && Key <= KEY_8) {
+            CW_KeyMacro(Key - KEY_0);
+            gWasFKeyPressed = false;
+            gUpdateDisplay = true;
+            return;
+        }
+        if (Key == KEY_0) {
+            CW_KeyMacro(0); // CQ Call
+            gWasFKeyPressed = false;
+            gUpdateDisplay = true;
+            return;
+        }
+    }
+#endif
+
 #ifdef ENABLE_RESCUE_OPERATIONS
     if(gEeprom.MENU_LOCK == true) {
         if(Key == 2) { // Enable A/B only

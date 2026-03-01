@@ -44,6 +44,9 @@
 #ifdef ENABLE_EEPROM_HEXDUMP
     #include "hexdump.h"
 #endif
+#ifdef ENABLE_CW_KEYER
+    #include "features/cw/cw_ui.h"
+#endif
 #include "ui/ui.h"
 #include "core/misc.h"
 
@@ -76,6 +79,9 @@ void (*UI_DisplayFunctions[])(void) = {
     [DISPLAY_SYSINFO] = &SYSINFO_Render,
 #ifdef ENABLE_EEPROM_HEXDUMP
     [DISPLAY_HEXDUMP] = &UI_DisplayHexDump, // We'll implement this wrapper in hexdump.c
+#endif
+#ifdef ENABLE_CW_KEYER
+    [DISPLAY_CW_KEYER] = &CW_UI_Render,
 #endif
 };
 

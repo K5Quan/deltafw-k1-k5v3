@@ -32,6 +32,7 @@ typedef struct MenuItem {
   
   bool (*action)(const struct MenuItem *item, KEY_Code_t key, bool key_pressed, bool key_held);
   MItemType type;
+  void (*get_name)(const struct MenuItem *item, char *buf, uint8_t buf_size);
 } MenuItem;
 
 typedef struct Menu {
@@ -51,6 +52,7 @@ typedef struct Menu {
   uint8_t y;
   uint8_t width;
   uint8_t height;
+  bool is_held;
 } Menu;
 
 void AG_MENU_Init(Menu *main_menu);

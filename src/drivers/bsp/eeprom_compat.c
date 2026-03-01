@@ -83,7 +83,7 @@ void EEPROM_ReadBuffer(uint16_t Address, void *pBuffer, uint8_t Size)
             Storage_ReadBufferRaw(PY_Addr, pBuffer, PY_Size);
         }
         Address += PY_Size;
-        pBuffer += PY_Size;
+        pBuffer = (uint8_t *)pBuffer + PY_Size;
         Size -= PY_Size;
     }
 }
@@ -104,7 +104,7 @@ void EEPROM_WriteBuffer(uint16_t Address, const void *pBuffer)
             Storage_WriteBufferRaw(PY_Addr, pBuffer, PY_Size, AppendFlag);
         }
         Address += PY_Size;
-        pBuffer += PY_Size;
+        pBuffer = (const uint8_t *)pBuffer + PY_Size;
         Size -= PY_Size;
     }
 }

@@ -7,7 +7,7 @@
 
 [project]
 name = "deltafw"
-version = "1.7.2"
+version = "1.7.4"
 authors = ["qshosfw"]
 supported_devices = ["UV-K1", "UV-K5v3"]
 
@@ -139,7 +139,7 @@ SPECTRUM_EXTRA_VALUES = false
 AIRCOPY = false
 SERIAL_SCREENCAST = true
 APP_BREAKOUT_GAME = false
-CW_KEYER = false
+CW_KEYER = true
 DTMF_CALLING = false
 RESCUE_OPERATIONS = false
 LIVESEEK = false

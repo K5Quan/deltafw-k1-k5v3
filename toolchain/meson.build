@@ -419,7 +419,10 @@ endif
 
 if get_option('CW_KEYER')
   defines += '-DENABLE_CW_KEYER'
-  sources += files('../src/features/cw/cw.c')
+  sources += files(
+    '../src/features/cw/cw.c',
+    '../src/features/cw/cw_ui.c'
+  )
 endif
 
 if get_option('DTMF_CALLING')

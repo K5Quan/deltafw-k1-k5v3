@@ -11,6 +11,7 @@
 #include "features/action/action.h"
 #include "features/app/app.h"
 #include "features/audio/audio.h"
+#include "features/radio/radio.h"
 #include "apps/settings/settings.h"
 #include "apps/settings/settings_ui.h"
 #include "apps/aircopy/aircopy.h"
@@ -90,6 +91,18 @@ static bool LA_AirCopy(const MenuItem *item, KEY_Code_t key, bool key_pressed, b
 }
 #endif
 
+#ifdef ENABLE_CW_KEYER
+static bool LA_Keyer(const MenuItem *item, KEY_Code_t key, bool key_pressed, bool key_held) {
+    if (key != KEY_MENU && key != KEY_PTT) return false;
+    if (!key_pressed || key_held) return true;
+    
+    // Start the new CW Keyer Menu UI
+    CW_UI_Init();
+    gRequestDisplayScreen = DISPLAY_CW_KEYER;
+    return true;
+}
+#endif
+
 static bool LA_Info(const MenuItem *item, KEY_Code_t key, bool key_pressed, bool key_held) {
     if (key != KEY_MENU && key != KEY_PTT) return false;
     if (!key_pressed || key_held) return true;
@@ -98,32 +111,63 @@ static bool LA_Info(const MenuItem *item, KEY_Code_t key, bool key_pressed, bool
     return true;
 }
 
-// Menu Items
-static const MenuItem launcherItems[] = {
+// Menu Items (Normal)
+static const MenuItem normalLauncherItems[] = {
     {"Memories", 0, NULL, NULL, NULL, LA_Memories},
     {"Settings", 0, NULL, NULL, NULL, LA_Settings},
 #if defined(ENABLE_SPECTRUM_EXTENSIONS) && defined(ENABLE_SPECTRUM)
     {"Spectrum", 0, NULL, NULL, NULL, LA_Spectrum},
 #endif
-    #ifdef ENABLE_FMRADIO
+#ifdef ENABLE_FMRADIO
     {"FM Radio", 0, NULL, NULL, NULL, LA_FM},
-    #endif
+#endif
     {"Scanner", 0, NULL, NULL, NULL, LA_Scanner},
-    #ifdef ENABLE_AIRCOPY
+#ifdef ENABLE_AIRCOPY
     {"Air Copy", 0, NULL, NULL, NULL, LA_AirCopy},
-    #endif
+#endif
     {"Info", 0, NULL, NULL, NULL, LA_Info}
 };
 
+#ifdef ENABLE_CW_KEYER
+static const MenuItem cwLauncherItems[] = {
+    {"Keyer", 0, NULL, NULL, NULL, LA_Keyer},
+    {"Memories", 0, NULL, NULL, NULL, LA_Memories},
+    {"Settings", 0, NULL, NULL, NULL, LA_Settings},
+#if defined(ENABLE_SPECTRUM_EXTENSIONS) && defined(ENABLE_SPECTRUM)
+    {"Spectrum", 0, NULL, NULL, NULL, LA_Spectrum},
+#endif
+#ifdef ENABLE_FMRADIO
+    {"FM Radio", 0, NULL, NULL, NULL, LA_FM},
+#endif
+    {"Scanner", 0, NULL, NULL, NULL, LA_Scanner},
+#ifdef ENABLE_AIRCOPY
+    {"Air Copy", 0, NULL, NULL, NULL, LA_AirCopy},
+#endif
+    {"Info", 0, NULL, NULL, NULL, LA_Info}
+};
+#endif
+
 static Menu launcherMenu = {
-    .title = "Menu", // Or Launcher
-    .items = launcherItems,
-    .num_items = sizeof(launcherItems) / sizeof(launcherItems[0]),
+    .title = "Menu", 
+    .items = normalLauncherItems,
+    .num_items = sizeof(normalLauncherItems) / sizeof(normalLauncherItems[0]),
     .x = 0, .y = MENU_Y, .width = LCD_WIDTH, .height = LCD_HEIGHT - MENU_Y, .itemHeight = MENU_ITEM_H
 };
 
 
 void LAUNCHER_Init() {
+#ifdef ENABLE_CW_KEYER
+    if (gTxVfo->Modulation == MODULATION_CW) {
+        launcherMenu.items = cwLauncherItems;
+        launcherMenu.num_items = sizeof(cwLauncherItems) / sizeof(cwLauncherItems[0]);
+    } else {
+        launcherMenu.items = normalLauncherItems;
+        launcherMenu.num_items = sizeof(normalLauncherItems) / sizeof(normalLauncherItems[0]);
+    }
+#else
+    launcherMenu.items = normalLauncherItems;
+    launcherMenu.num_items = sizeof(normalLauncherItems) / sizeof(normalLauncherItems[0]);
+#endif
     AG_MENU_Init(&launcherMenu);
 }
 

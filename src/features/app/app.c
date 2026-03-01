@@ -32,6 +32,8 @@
     #include "ui/hexdump.h"
 #endif
 #include "features/app/app.h"
+#include "features/cw/cw.h"
+#include "features/cw/cw_ui.h"
 #include "apps/scanner/chFrScanner.h"
 #include "features/dtmf/dtmf.h"
 #ifdef ENABLE_FLASHLIGHT
@@ -126,6 +128,7 @@
 
 #ifdef ENABLE_CW_KEYER
     #include "features/cw/cw.h"
+    #include "apps/cw_compose/cw_compose.h"
 #endif
 
 static bool flagSaveVfo;
@@ -159,6 +162,9 @@ void (*ProcessKeysFunctions[])(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld) 
     [DISPLAY_SYSINFO] = &SYSINFO_ProcessKeys,
 #ifdef ENABLE_EEPROM_HEXDUMP
     [DISPLAY_HEXDUMP] = &UI_HexDump_ProcessKeys,
+#endif
+#ifdef ENABLE_CW_KEYER
+    [DISPLAY_CW_KEYER] = &CW_UI_HandleInput,
 #endif
 };
 
@@ -281,6 +287,10 @@ static void HandleIncoming(void)
 #ifdef ENABLE_DTMF_CALLING
     if (gScanStateDir == SCAN_OFF && (gRxVfo->DTMF_DECODING_ENABLE || gSetting_KILLED)) {
 
+        #ifdef ENABLE_CW_KEYER
+#endif
+
+// END OF INCLUDES
         // DTMF DCD is enabled
         DTMF_HandleRequest();
         if (gDTMF_CallState == DTMF_CALL_STATE_NONE) {
@@ -1745,14 +1755,17 @@ void APP_TimeSlice10ms(void)
     else if (gCurrentFunction == FUNCTION_RECEIVE || gCurrentFunction == FUNCTION_MONITOR || gCurrentFunction == FUNCTION_INCOMING)
     {
 #ifdef ENABLE_ANTENNA_SIGNAL_BAR
-        SIGNAL_QUALITY_Update();
+        // SIGNAL_QUALITY_Update(); // Removed as per instruction
 #endif
 #ifdef ENABLE_SIGNAL_CLASSIFIER
         SIGNAL_CLASSIFIER_Update(gEeprom.RX_VFO, (BK4819_GetRSSI() / 2) - 160);
 #endif
 
 #ifdef ENABLE_SMART_SQUELCH
-        SMART_SQUELCH_Update();
+#ifdef ENABLE_CW_KEYER
+        if (gEeprom.VfoInfo[gEeprom.RX_VFO].Modulation != MODULATION_CW)
+#endif
+            SMART_SQUELCH_Update();
 #endif
 
 #ifdef ENABLE_SQUELCH_TAIL_ELIMINATION
@@ -2258,16 +2271,8 @@ void ProcessKey(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
     #endif
 
 #ifdef ENABLE_CW_KEYER
-    // CW mode: All 3 keys add to queue, CW manages TX automatically
+    // CW mode: PTT adds straight key to queue
     if (gTxVfo->Modulation == MODULATION_CW) {
-        if (Key == KEY_SIDE1) {
-            CW_SetDitPaddle(bKeyPressed);
-            return;
-        }
-        if (Key == KEY_SIDE2) {
-            CW_SetDahPaddle(bKeyPressed);
-            return;
-        }
         if (Key == KEY_PTT) {
             if (bKeyPressed) {
                 CW_StraightKeyDown();
