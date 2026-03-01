@@ -25,32 +25,19 @@ jobs:
         echo "build_date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
         echo "full_commit=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
 
-    - name: Build Custom firmware
+    - name: Build all presets
       run: |
         chmod +x toolchain/compile-with-meson.sh
-        ./toolchain/compile-with-meson.sh Custom
+        ./toolchain/compile-with-meson.sh All
 
-    - name: Build Fusion firmware
-      run: |
-        ./toolchain/compile-with-meson.sh Fusion
-
-    - name: Upload Custom firmware
+    - name: Upload Build Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: deltafw-custom-${{ steps.build_info.outputs.commit_hash }}
+        name: deltafw-builds-${{ steps.build_info.outputs.commit_hash }}
         path: |
-          build/deltafw.custom.*.bin
-          build/deltafw.custom.*.hex
-          build/deltafw.custom.*.qsh
-
-    - name: Upload Fusion firmware
-      uses: actions/upload-artifact@v4
-      with:
-        name: deltafw-fusion-${{ steps.build_info.outputs.commit_hash }}
-        path: |
-          build/deltafw.fusion.*.bin
-          build/deltafw.fusion.*.hex
-          build/deltafw.fusion.*.qsh
+          build/deltafw.*.bin
+          build/deltafw.*.hex
+          build/deltafw.*.qsh
 
     - name: Check for Release Condition
       id: check_release
@@ -77,9 +64,11 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Create Middle-Minor Tag
+    - name: Create Tag
       if: steps.check_release.outputs.should_tag_only == 'true'
       run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
         git tag ${{ steps.check_release.outputs.release_tag }}
         git push origin ${{ steps.check_release.outputs.release_tag }}
       env:
