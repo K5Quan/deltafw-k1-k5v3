@@ -106,7 +106,7 @@ build_preset() {
     presets_list=$(get_config list_presets)
     if [[ ! " $presets_list " =~ " $preset " ]]; then
         log_error "Unknown preset: '$preset'"
-        exit 1
+        return 1
     fi
     
     # Fetch Meson Args
@@ -191,12 +191,13 @@ build_preset() {
             echo -e "${BADGE_OK} Container: ${BOLD}${CYAN}${BUILD_DIR}/${FILENAME_QSH}${RESET}"
         else
             log_error "Artifact not found!"
-            exit 1
+            return 1
         fi
     else
         log_error "Compilation failed for ${preset}!"
-        exit 1
+        return 1
     fi
+    return 0
 }
 
 print_logo
@@ -210,9 +211,21 @@ if [[ "$PRESET" == "All" ]]; then
     # Dynamic list from config
     PRESETS_STR=$(get_config list_presets)
     read -r -a PRESETS <<< "$PRESETS_STR"
+    SUCCESS_COUNT=0
+    TOTAL_COUNT=0
     for p in "${PRESETS[@]}"; do
-        build_preset "$p"
+        ((TOTAL_COUNT++))
+        if build_preset "$p"; then
+            ((SUCCESS_COUNT++))
+        fi
     done
+    log_info "Build Summary: ${SUCCESS_COUNT}/${TOTAL_COUNT} presets succeeded."
+    if [[ $SUCCESS_COUNT -eq 0 ]]; then
+        log_error "All presets failed to build!"
+        exit 1
+    fi
 else
-    build_preset "$PRESET"
+    if ! build_preset "$PRESET"; then
+        exit 1
+    fi
 fi
