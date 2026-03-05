@@ -54,7 +54,8 @@ typedef enum {
     /* --- CW Keyer --- */ \
     X(CW_SETTINGS,        ENC_PLAIN,     FIXED,   0x150000,  256, 1,      0,      0,  0) \
     /* --- Hermes Mesh --- */ \
-    X(HERMES_SETTINGS,    ENC_PLAIN,     FIXED,   0x150100,  128, 1,      0,      0,  0)
+    X(HERMES_SETTINGS,    ENC_PLAIN,     FIXED,   0x150100,  128, 1,      0,      0,  0) \
+    X(HERMES_CONTACTS,    ENC_PLAIN,     LINEAR,  0x150180,  64,  16,     64,     0,  0)
 
 
 typedef enum {
@@ -343,7 +344,7 @@ typedef union {
         uint8_t  FreqMode;        // 0=LPD66(433.00), 1=CurrentVFO, 2=MemChannel(Idx in FreqCh)
         uint8_t  FreqCh;          // Memory channel index (0-199) if FreqMode==2
         bool     Enabled;
-        uint8_t  RoutingMode;     // 0=Off, 1=Passive(Only Rx/Map), 2=Active Relay
+        bool     RelayEnabled;    // 1=Active Relay, 0=Off
         uint8_t  AckMode;         // 0=Off, 1=Manual, 2=Auto
         bool     CryptoEnabled;
         uint8_t  TTL;             // Default TTL (e.g. 5)
@@ -353,6 +354,18 @@ typedef union {
     } fields;
     uint8_t raw[128];
 } __attribute__((packed)) HermesSettings_t;
+
+// Schema for REC_HERMES_CONTACTS (64 bytes each, 16 slots)
+typedef union {
+    struct {
+        uint8_t  NodeID[6];
+        char     Alias[13];
+        char     Passcode[33];    // Scope secret / per-contact passcode
+        uint8_t  Flags;           // bit 0: multicast
+        uint8_t  Reserved[11];    // padding to 64 bytes
+    } fields;
+    uint8_t raw[64];
+} __attribute__((packed)) HermesContactRecord_t;
 
 
 

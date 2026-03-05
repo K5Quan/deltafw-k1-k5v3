@@ -40,6 +40,7 @@
 
 #ifdef ENABLE_HERMES_DISCOVERY
 #include "apps/hermes/app/discovery.h"
+#include "core/scheduler.h"
 #endif
 
 #ifdef ENABLE_HERMES_PING
@@ -89,7 +90,7 @@ void HERMES_Init(void) {
         settings.fields.FreqMode = 0; // LPD66
         settings.fields.FreqCh = 0;
         settings.fields.Enabled = true;
-        settings.fields.RoutingMode = 2; // Active Relay
+        settings.fields.RelayEnabled = true; // Default ON
         settings.fields.AckMode = 2; // Auto
         settings.fields.CryptoEnabled = false;
         settings.fields.TTL = 7;
@@ -123,7 +124,7 @@ void HERMES_Init(void) {
     gHermesConfig.sync_word[2] = 0x11;
     gHermesConfig.sync_word[3] = 0xDB;
     gHermesConfig.ttl          = settings.fields.TTL;
-    gHermesConfig.routing_mode = settings.fields.RoutingMode;
+    gHermesConfig.relay_enabled = settings.fields.RelayEnabled;
     gHermesConfig.ack_mode     = settings.fields.AckMode;
     gHermesConfig.freq_mode    = settings.fields.FreqMode;
     gHermesConfig.mac_policy   = settings.fields.MacPolicy;
@@ -193,18 +194,46 @@ void HERMES_Init(void) {
     HERMES_UI_Init();
 }
 
-// ═══════════════════════════════════════════════════════════
-// Key Processing — called by display system for DISPLAY_NETWORK
+#ifdef ENABLE_HERMES_MESSENGER
+// ──── Contact Lookup ────
+static bool HERMES_GetContactSecret(const uint8_t id[6], uint8_t secret[32]) {
+    HermesContactRecord_t rec;
+    for (uint8_t i = 0; i < 16; i++) {
+        if (Storage_ReadRecordIndexed(REC_HERMES_CONTACTS, i, &rec, 0, sizeof(rec))) {
+            if (rec.fields.NodeID[0] != 0xFF && memcmp(rec.fields.NodeID, id, 6) == 0) {
+                // Return passcode as secret (padded/truncated to 32)
+                strncpy((char*)secret, rec.fields.Passcode, 32);
+                return true;
+            }
+        }
+    }
+    return false;
+}
+#endif
+
 // ═══════════════════════════════════════════════════════════
 
 void HERMES_ProcessKeys(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld) {
-    // ── Compose view: delegate everything to TextInput ──
-    if (gHermesView == HM_VIEW_COMPOSE) {
+    // ── Text input views: delegate everything to TextInput ──
+    if (gHermesView == HM_VIEW_COMPOSE ||
+        gHermesView == HM_VIEW_INPUT_ALIAS ||
+        gHermesView == HM_VIEW_INPUT_PASSCODE ||
+        gHermesView == HM_VIEW_INPUT_SALT ||
+        gHermesView == HM_VIEW_INPUT_CONTACT) {
         if (TextInput_IsActive()) {
             if (TextInput_HandleInput(Key, bKeyPressed, bKeyHeld))
                 gUpdateDisplay = true;
         } else {
-            // TextInput closed (callback fired) — view already set by callback
+            // Text input was deinited (e.g. by EXIT long-press) — return to parent view
+            if (gHermesView == HM_VIEW_COMPOSE) {
+                gHermesView = HM_VIEW_CHAT;
+            } else if (gHermesView == HM_VIEW_INPUT_CONTACT) {
+                gHermesView = HM_VIEW_CONTACTS;
+                HERMES_UI_Init();
+            } else {
+                gHermesView = HM_VIEW_SETTINGS;
+                HERMES_UI_Init();
+            }
             gUpdateDisplay = true;
         }
         return;
@@ -245,7 +274,15 @@ void HERMES_ProcessKeys(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld) {
         }
     }
 
-    // ── Menu/Settings views: AG_MENU handles everything ──
+    // ── Menu/Settings/Contacts views: AG_MENU handles everything ──
+    if (gHermesView == HM_VIEW_CONTACTS) {
+        extern bool MA_DeleteContact(const struct MenuItem *i, KEY_Code_t k, bool kp, bool kh);
+        if (MA_DeleteContact(NULL, Key, bKeyPressed, bKeyHeld)) {
+            gUpdateDisplay = true;
+            return;
+        }
+    }
+
     if (!AG_MENU_IsActive())
         HERMES_UI_Init();
 
@@ -256,8 +293,8 @@ void HERMES_ProcessKeys(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld) {
 
     // If menu exited (back from settings → main, or back from main → launcher)
     if (!AG_MENU_IsActive()) {
-        if (gHermesView == HM_VIEW_SETTINGS) {
-            // Back from settings → reinit main menu
+        if (gHermesView == HM_VIEW_SETTINGS || gHermesView == HM_VIEW_CONTACTS) {
+            // Back from settings/contacts → reinit main menu
             gHermesView = HM_VIEW_MENU;
             HERMES_UI_Init();
             gUpdateDisplay = true;
@@ -304,7 +341,7 @@ static void ProcessReceivedFrame(void) {
     if (HERMES_Route_IsDuplicate(block.header.packet_id)) return;
     HERMES_Route_Record(block.header.packet_id);
 
-    if (gHermesConfig.routing_mode > 0 &&
+    if (gHermesConfig.relay_enabled &&
         HERMES_Route_ShouldForward(&block.header, gHermesConfig.node_id)) {
         HERMES_Route_DecrementTTL(&block.header);
         
@@ -322,19 +359,26 @@ static void ProcessReceivedFrame(void) {
             uint8_t key[32];
             uint8_t addr_mode = HM_HDR_AddrMode(&block.header);
             uint8_t label;
-            const uint8_t *secret = NULL; // NULL = all-zeros for broadcast/discovery
-
+            uint8_t secret[32];
+            bool    has_secret = false;
+ 
             switch (addr_mode) {
-                case HM_ADDR_UNICAST:   label = HM_LABEL_UNICAST;   break;
-                case HM_ADDR_MULTICAST: label = HM_LABEL_MULTICAST; break;
+                case HM_ADDR_UNICAST:   
+                    label = HM_LABEL_UNICAST;   
+                    has_secret = HERMES_GetContactSecret(block.header.src, secret);
+                    break;
+                case HM_ADDR_MULTICAST: 
+                    label = HM_LABEL_MULTICAST; 
+                    has_secret = HERMES_GetContactSecret(block.header.dest, secret);
+                    break;
                 case HM_ADDR_BROADCAST: label = HM_LABEL_BROADCAST; break;
                 case HM_ADDR_DISCOVER:  label = HM_LABEL_DISCOVERY; break;
                 default:                label = HM_LABEL_BROADCAST; break;
             }
-
+ 
             // RFC §5: Use OUR node_id as destination (receiver derives using own address)
             HERMES_KDF_DeriveTrafficKey(gHermesConfig.net_key, label,
-                                         gHermesConfig.node_id, secret, key);
+                                         gHermesConfig.node_id, has_secret ? secret : NULL, key);
 
             if (!HERMES_Seal_DecryptInner(&block, key))
                 return; // Dropped: invalid inner MAC or decryption failed
@@ -433,7 +477,7 @@ static void ProcessReceivedFrame(void) {
         if (HM_IsOurAddress(block.header.dest, gHermesConfig.node_id)) {
             // Ping reached us
             gUpdateDisplay = true;
-        } else if (gHermesConfig.routing_mode > 0) {
+        } else if (gHermesConfig.relay_enabled) {
             // Relay ping, recording our hop
             if (HERMES_PING_InsertHop(block.payload, gHermesConfig.node_id)) {
                 HermesFrame_t frame;
@@ -472,19 +516,26 @@ void HERMES_SendMessage(const HermesMessage_t *m) {
     if (gHermesConfig.crypto_enabled) {
         uint8_t k_scope[32];
         uint8_t label;
-        const uint8_t *secret = NULL;
-
+        uint8_t secret[32];
+        bool    has_secret = false;
+ 
         switch (m->addressing) {
-            case HM_ADDR_UNICAST:   label = HM_LABEL_UNICAST;   break;
-            case HM_ADDR_MULTICAST: label = HM_LABEL_MULTICAST; break;
+            case HM_ADDR_UNICAST:   
+                label = HM_LABEL_UNICAST;   
+                has_secret = HERMES_GetContactSecret(m->dest, secret);
+                break;
+            case HM_ADDR_MULTICAST: 
+                label = HM_LABEL_MULTICAST; 
+                has_secret = HERMES_GetContactSecret(m->dest, secret);
+                break;
             case HM_ADDR_BROADCAST: label = HM_LABEL_BROADCAST; break;
             case HM_ADDR_DISCOVER:  label = HM_LABEL_DISCOVERY; break;
             default:                label = HM_LABEL_BROADCAST; break;
         }
-
+ 
         // RFC §5: Derive Traffic Key using destination + label + secret
         HERMES_KDF_DeriveTrafficKey(gHermesConfig.net_key, label,
-                                     m->dest, secret, k_scope);
+                                     m->dest, has_secret ? secret : NULL, k_scope);
 
         // Inner: encrypt payload+source using AEAD (E2E)
         HERMES_Seal_EncryptInner(&block, k_scope);
@@ -560,12 +611,12 @@ void HERMES_Tick(void) {
 
 #ifdef ENABLE_HERMES_ROUTER
     // Process forward queue
-    HERMES_Route_Tick(SYSTEM_GetUptime());
+    HERMES_Route_Tick(SYSTICK_GetTick());
 #endif
 
 #ifdef ENABLE_HERMES_MESSENGER
     // Process ARQ timeouts and retries
-    HERMES_ARQ_Tick(SYSTEM_GetUptime());
+    HERMES_ARQ_Tick(SYSTICK_GetTick());
 #endif
 
     if (rx_led_timeout_ms > 0) {
@@ -578,7 +629,11 @@ void HERMES_Tick(void) {
         }
     }
 
-    if (gHermesView == HM_VIEW_COMPOSE && TextInput_IsActive()) {
+    if ((gHermesView == HM_VIEW_COMPOSE ||
+         gHermesView == HM_VIEW_INPUT_ALIAS ||
+         gHermesView == HM_VIEW_INPUT_PASSCODE ||
+         gHermesView == HM_VIEW_INPUT_SALT ||
+         gHermesView == HM_VIEW_INPUT_CONTACT) && TextInput_IsActive()) {
         if (TextInput_Tick()) gUpdateDisplay = true;
     }
 }

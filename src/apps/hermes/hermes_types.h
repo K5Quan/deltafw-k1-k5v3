@@ -133,7 +133,7 @@ typedef struct {
 typedef struct {
     uint8_t  node_id[HM_NODE_ID_SIZE];
     char     alias[13];
-    char     secret[13];
+    char     passcode[33];  // Scope secret / per-contact passcode
     uint8_t  flags;
 } HermesContact_t;
 
@@ -161,7 +161,7 @@ typedef struct {
     uint8_t  ttl;
     uint8_t  freq_mode;      // 0=LPD66, 1=VFO, 2=MEM
     uint8_t  freq_ch;        // Memory channel index (0-199) if freq_mode==2
-    uint8_t  routing_mode;   // 0=Off, 1=Passive, 2=Active Relay
+    bool     relay_enabled;
     uint8_t  ack_mode;       // 0=Off, 1=Manual, 2=Auto
     uint8_t  mac_policy;     // 0=HW, 1=Custom, 2=Alias
     bool     crypto_enabled;

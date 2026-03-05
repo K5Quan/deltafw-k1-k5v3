@@ -23,7 +23,12 @@
 #define HM_LABEL_DISCOVERY 0x44  // 'D'
 
 void HERMES_KDF_DeriveNetworkKey(const char *passcode, const uint8_t salt[16], uint8_t out[32]) {
-    if (!passcode || !salt || !out) return;
+    if (!salt || !out) return;
+    // NULL / empty passcode → NULL key (all zeros)
+    if (!passcode || passcode[0] == '\0') {
+        memset(out, 0, 32);
+        return;
+    }
 
     // RFC §2.1.2: Absorb salt + passcode into initial state
     uint8_t work[32];

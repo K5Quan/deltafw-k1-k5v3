@@ -82,4 +82,52 @@ void HERMES_Addr_Decode(const uint8_t addr[6], char *out, uint8_t max_len) {
     out[copy_len] = '\0';
 }
 
+bool HERMES_Addr_IsBase40(const uint8_t addr[6]) {
+    // Decode and verify all chars are valid Base40 alphabet
+    char buf[10];
+    HERMES_Addr_Decode(addr, buf, sizeof(buf));
+    // An all-zero address is not a "valid" callsign
+    bool all_zero = true;
+    for (uint8_t i = 0; i < 6; i++) {
+        if (addr[i] != 0) { all_zero = false; break; }
+    }
+    if (all_zero) return false;
+    // Check each decoded char is in the Base40 set
+    for (uint8_t i = 0; buf[i]; i++) {
+        char c = buf[i];
+        if (c == ' ') continue;
+        if (c >= 'A' && c <= 'Z') continue;
+        if (c >= '0' && c <= '9') continue;
+        if (c == '-' || c == '/' || c == '.') continue;
+        return false;
+    }
+    return buf[0] != '\0';
+}
+
+void HERMES_Addr_FormatMAC(const uint8_t addr[6], char *out, uint8_t max_len) {
+    if (!out || max_len < 18) {
+        if (out && max_len > 0) out[0] = '\0';
+        return;
+    }
+    const char *hex = "0123456789ABCDEF";
+    uint8_t p = 0;
+    for (uint8_t i = 0; i < 6; i++) {
+        out[p++] = hex[(addr[i] >> 4) & 0x0F];
+        out[p++] = hex[addr[i] & 0x0F];
+        if (i < 5) out[p++] = ':';
+    }
+    out[p] = '\0';
+}
+
+void HERMES_Addr_Format(const uint8_t addr[6], uint8_t mac_policy, char *out, uint8_t max_len) {
+    if (!out || max_len < 2) return;
+    // If mac_policy is Alias (2), always show Base40 decoded callsign
+    if (mac_policy == 2) {
+        HERMES_Addr_Decode(addr, out, max_len);
+        return;
+    }
+    // If mac_policy is HW (0) or Custom (1), show as MAC
+    HERMES_Addr_FormatMAC(addr, out, max_len);
+}
+
 #endif // ENABLE_MESH_NETWORK
