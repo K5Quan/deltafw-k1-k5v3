@@ -7,7 +7,7 @@
 
 [project]
 name = "deltafw"
-version = "1.7.5"
+version = "1.8.0"
 authors = ["qshosfw"]
 supported_devices = ["UV-K1", "UV-K5v3"]
 

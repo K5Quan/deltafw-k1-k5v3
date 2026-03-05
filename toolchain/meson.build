@@ -620,28 +620,59 @@ endif
 
 if get_option('MESH_NETWORK')
   defines += '-DENABLE_MESH_NETWORK'
+  # Core Hermes sources (always compiled with MESH_NETWORK)
   sources += files(
     '../src/apps/hermes/hermes.c',
     '../src/apps/hermes/ui/hermes_ui.c',
-    '../src/apps/hermes/protocol/protocol.c'
+    # Physical Layer
+    '../src/apps/hermes/physical/phy.c',
+    # Data-Link Layer
+    '../src/apps/hermes/datalink/whitening.c',
+    '../src/apps/hermes/datalink/framing.c',
+    '../src/apps/hermes/datalink/fec.c',
+    # Network Layer (addressing always needed)
+    '../src/apps/hermes/network/addressing.c',
+    # Transport Layer
+    '../src/apps/hermes/transport/packet.c',
+    '../src/apps/hermes/transport/csma.c',
+    # Security Layer
+    '../src/apps/hermes/security/crypto_engine.c',
+    '../src/apps/hermes/security/kdf.c',
+    '../src/apps/hermes/security/seal.c'
   )
+  # Optional modules gated by sub-flags
   if get_option('HERMES_MESSENGER')
     defines += '-DENABLE_HERMES_MESSENGER'
+    sources += files(
+      '../src/apps/hermes/app/messaging.c',
+      '../src/apps/hermes/transport/reliability.c'
+    )
   endif
   if get_option('HERMES_ROUTER')
     defines += '-DENABLE_HERMES_ROUTER'
+    sources += files(
+      '../src/apps/hermes/network/routing.c',
+      '../src/apps/hermes/network/fragmentation.c'
+    )
   endif
   if get_option('HERMES_PING')
     defines += '-DENABLE_HERMES_PING'
+    sources += files('../src/apps/hermes/app/ping.c')
   endif
   if get_option('HERMES_TELEMETRY')
     defines += '-DENABLE_HERMES_TELEMETRY'
+    sources += files('../src/apps/hermes/app/telemetry.c')
   endif
   if get_option('HERMES_DISCOVERY')
     defines += '-DENABLE_HERMES_DISCOVERY'
+    sources += files('../src/apps/hermes/app/discovery.c')
   endif
   if get_option('HERMES_ACK_HEALTH')
     defines += '-DENABLE_HERMES_ACK_HEALTH'
+    sources += files(
+      '../src/apps/hermes/app/ack.c',
+      '../src/apps/hermes/transport/lqi.c'
+    )
   endif
 endif
 

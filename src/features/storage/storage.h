@@ -52,7 +52,9 @@ typedef enum {
     X(VOICE_PROMPT_DATA,  ENC_PLAIN,     LINEAR,  0x14C000,  0,   2,      0x800,  0,  0) \
     X(VOICE_CLIP_DATA,    ENC_PLAIN,     LINEAR,  0x14D000,  0,   0xFFFF, 1,      0,  0) \
     /* --- CW Keyer --- */ \
-    X(CW_SETTINGS,        ENC_PLAIN,     FIXED,   0x150000,  256, 1,      0,      0,  0)
+    X(CW_SETTINGS,        ENC_PLAIN,     FIXED,   0x150000,  256, 1,      0,      0,  0) \
+    /* --- Hermes Mesh --- */ \
+    X(HERMES_SETTINGS,    ENC_PLAIN,     FIXED,   0x150100,  128, 1,      0,      0,  0)
 
 
 typedef enum {
@@ -325,6 +327,32 @@ typedef union {
     } fields;
     uint8_t raw[256];
 } __attribute__((packed)) CWSettings_t;
+
+// Schema for REC_HERMES_SETTINGS (128 bytes, 0x150100)
+typedef union {
+    struct {
+        uint16_t Magic;           // 0x484D "HM"
+        uint8_t  MacPolicy;       // 0=Hardware, 1=Custom, 2=Alias
+        uint8_t  CustomMac[6];    // If policy=1
+        char     Alias[13];       // Max 12 chars + null (if policy=2 or discovery alias)
+        char     Passcode[32];    // Human-readable passcode for K_net
+        uint8_t  Salt[16];        // 128-bit Network Salt (RFC §2.1.2)
+        bool     HasPasscode;     // 1 if custom passcode/salt, 0 if default
+        
+        // Granular options
+        uint8_t  FreqMode;        // 0=LPD66(433.00), 1=CurrentVFO, 2=MemChannel(Idx in FreqCh)
+        uint8_t  FreqCh;          // Memory channel index (0-199) if FreqMode==2
+        bool     Enabled;
+        uint8_t  RoutingMode;     // 0=Off, 1=Passive(Only Rx/Map), 2=Active Relay
+        uint8_t  AckMode;         // 0=Off, 1=Manual, 2=Auto
+        bool     CryptoEnabled;
+        uint8_t  TTL;             // Default TTL (e.g. 5)
+        uint8_t  TxPower;         // 0=Low, 1=Mid, 2=High
+        
+        uint8_t  Reserved[40];    // (128 - 2 - 1 - 6 - 13 - 32 - 16 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 = 40)
+    } fields;
+    uint8_t raw[128];
+} __attribute__((packed)) HermesSettings_t;
 
 
 
