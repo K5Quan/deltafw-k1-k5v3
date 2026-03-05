@@ -17,6 +17,10 @@
 #include "apps/aircopy/aircopy.h"
 #include "apps/boot/boot.h"
 
+#ifdef ENABLE_MESH_NETWORK
+#include "apps/hermes/hermes.h"
+#endif
+
 #ifdef ENABLE_APP_BREAKOUT_GAME
 #include "features/breakout/breakout.h"
 #endif
@@ -111,8 +115,19 @@ static bool LA_Info(const MenuItem *item, KEY_Code_t key, bool key_pressed, bool
     return true;
 }
 
+static bool LA_Network(const MenuItem *item, KEY_Code_t key, bool key_pressed, bool key_held) {
+    if (key != KEY_MENU && key != KEY_PTT) return false;
+    if (!key_pressed || key_held) return true;
+    HERMES_Init();
+    gRequestDisplayScreen = DISPLAY_NETWORK;
+    return true;
+}
+
 // Menu Items (Normal)
 static const MenuItem normalLauncherItems[] = {
+#ifdef ENABLE_MESH_NETWORK
+    {"Network", 0, NULL, NULL, NULL, LA_Network},
+#endif
     {"Memories", 0, NULL, NULL, NULL, LA_Memories},
     {"Settings", 0, NULL, NULL, NULL, LA_Settings},
 #if defined(ENABLE_SPECTRUM_EXTENSIONS) && defined(ENABLE_SPECTRUM)
@@ -130,6 +145,9 @@ static const MenuItem normalLauncherItems[] = {
 
 #ifdef ENABLE_CW_KEYER
 static const MenuItem cwLauncherItems[] = {
+#ifdef ENABLE_MESH_NETWORK
+    {"Network", 0, NULL, NULL, NULL, LA_Network},
+#endif
     {"Keyer", 0, NULL, NULL, NULL, LA_Keyer},
     {"Memories", 0, NULL, NULL, NULL, LA_Memories},
     {"Settings", 0, NULL, NULL, NULL, LA_Settings},

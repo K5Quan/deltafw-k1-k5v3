@@ -145,9 +145,9 @@ sources = files(
   # Apps
   '../src/apps/battery/battery.c',
   '../src/apps/battery/battery_ui.c',
-  '../src/apps/launcher/launcher.c',
   '../src/apps/memories/memories.c',
   '../src/apps/sysinfo/sysinfo.c',
+  '../src/apps/launcher/launcher.c',
   '../src/apps/boot/boot.c',
 
   # UI
@@ -616,6 +616,33 @@ endif
 if get_option('ANTENNA_SIGNAL_BAR')
   defines += '-DENABLE_ANTENNA_SIGNAL_BAR'
   sources += files('../src/features/rx/signal_quality.c')
+endif
+
+if get_option('MESH_NETWORK')
+  defines += '-DENABLE_MESH_NETWORK'
+  sources += files(
+    '../src/apps/hermes/hermes.c',
+    '../src/apps/hermes/ui/hermes_ui.c',
+    '../src/apps/hermes/protocol/protocol.c'
+  )
+  if get_option('HERMES_MESSENGER')
+    defines += '-DENABLE_HERMES_MESSENGER'
+  endif
+  if get_option('HERMES_ROUTER')
+    defines += '-DENABLE_HERMES_ROUTER'
+  endif
+  if get_option('HERMES_PING')
+    defines += '-DENABLE_HERMES_PING'
+  endif
+  if get_option('HERMES_TELEMETRY')
+    defines += '-DENABLE_HERMES_TELEMETRY'
+  endif
+  if get_option('HERMES_DISCOVERY')
+    defines += '-DENABLE_HERMES_DISCOVERY'
+  endif
+  if get_option('HERMES_ACK_HEALTH')
+    defines += '-DENABLE_HERMES_ACK_HEALTH'
+  endif
 endif
 
 # Other Defines

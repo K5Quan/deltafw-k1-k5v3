@@ -47,6 +47,9 @@
 #ifdef ENABLE_CW_KEYER
     #include "features/cw/cw_ui.h"
 #endif
+#ifdef ENABLE_MESH_NETWORK
+    #include "apps/hermes/ui/hermes_ui.h"
+#endif
 #include "ui/ui.h"
 #include "core/misc.h"
 
@@ -82,6 +85,9 @@ void (*UI_DisplayFunctions[])(void) = {
 #endif
 #ifdef ENABLE_CW_KEYER
     [DISPLAY_CW_KEYER] = &CW_UI_Render,
+#endif
+#ifdef ENABLE_MESH_NETWORK
+    [DISPLAY_NETWORK] = &HERMES_UI_Render,
 #endif
 };
 

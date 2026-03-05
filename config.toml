@@ -7,7 +7,7 @@
 
 [project]
 name = "deltafw"
-version = "1.7.4"
+version = "1.7.5"
 authors = ["qshosfw"]
 supported_devices = ["UV-K1", "UV-K5v3"]
 
@@ -26,15 +26,15 @@ options = { EDITION_STRING = "Default" }
 
 [presets.dev]
 description = "🛠️ Developer build (Experimental, all features enabled)"
-options = { EDITION_STRING = "Dev" }
+options = { EDITION_STRING = "Dev", MESH_NETWORK = true, HERMES_MESSENGER = true, HERMES_ROUTER = true, HERMES_PING = true, HERMES_TELEMETRY = true, HERMES_DISCOVERY = true, HERMES_ACK_HEALTH = true }
 
 [presets.pro]
-description = "� Professional / Security focus (No games, stealth comms)"
+description = " Professional / Security focus (No games, stealth comms)"
 options = { EDITION_STRING = "Pro", FMRADIO = false, BOOT_BEEPS = false, CUSTOM_ROGER = false, APP_BREAKOUT_GAME = false, ALARM = false }
 
 [presets.ham]
 description = "📻 Amateur Radio focus (Full features, advanced tools)"
-options = { EDITION_STRING = "Ham", SPECTRUM = true, CW_KEYER = true, DTMF_CALLING = true, TX1750 = true, NOAA = true }
+options = { EDITION_STRING = "Ham", SPECTRUM = true, CW_KEYER = true, DTMF_CALLING = true, TX1750 = true, NOAA = true, MESH_NETWORK = true, HERMES_MESSENGER = true, HERMES_ROUTER = true, HERMES_PING = true, HERMES_TELEMETRY = true, HERMES_DISCOVERY = true, HERMES_ACK_HEALTH = true }
 
 [presets.survive]
 description = "⛑️ Emergency & Survival focus"
@@ -144,6 +144,19 @@ DTMF_CALLING = false
 RESCUE_OPERATIONS = false
 LIVESEEK = false
 REGA = false
+
+######################################
+# 📶 Mesh Network :: Hermes Protocol #
+# https://qshosfw.github.io/hermes/  #
+MESH_NETWORK = true
+HERMES_MESSENGER = true
+HERMES_ROUTER = true
+HERMES_PING = true
+HERMES_TELEMETRY = true
+HERMES_DISCOVERY = true
+HERMES_ACK_HEALTH = true
+
+######################################
 
 # 🔌 UART Commands
 UART_CMD_RSSI = true

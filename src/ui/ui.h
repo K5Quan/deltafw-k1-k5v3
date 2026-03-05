@@ -48,6 +48,9 @@ enum GUI_DisplayType_t
 #ifdef ENABLE_CW_KEYER
     DISPLAY_CW_KEYER,
 #endif
+#ifdef ENABLE_MESH_NETWORK
+    DISPLAY_NETWORK,
+#endif
 
     DISPLAY_N_ELEM,
     DISPLAY_INVALID = 0xFFu

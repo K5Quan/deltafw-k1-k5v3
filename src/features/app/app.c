@@ -34,6 +34,9 @@
 #include "features/app/app.h"
 #include "features/cw/cw.h"
 #include "features/cw/cw_ui.h"
+#ifdef ENABLE_MESH_NETWORK
+    #include "apps/hermes/hermes.h"
+#endif
 #include "apps/scanner/chFrScanner.h"
 #include "features/dtmf/dtmf.h"
 #ifdef ENABLE_FLASHLIGHT
@@ -165,6 +168,9 @@ void (*ProcessKeysFunctions[])(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld) 
 #endif
 #ifdef ENABLE_CW_KEYER
     [DISPLAY_CW_KEYER] = &CW_UI_HandleInput,
+#endif
+#ifdef ENABLE_MESH_NETWORK
+    [DISPLAY_NETWORK] = &HERMES_ProcessKeys,
 #endif
 };
 
