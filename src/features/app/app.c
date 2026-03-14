@@ -885,6 +885,11 @@ static void CheckRadioInterrupts(void)
             AIRCOPY_StorePacket();
         }
 #endif
+
+#ifdef ENABLE_MESH_NETWORK
+        // Dispatch FSK RX/TX events to Hermes mesh PHY/RX pipeline
+        HERMES_HandleFSKInterrupt(interrupts.__raw);
+#endif
     }
 }
 
@@ -1785,6 +1790,10 @@ void APP_TimeSlice10ms(void)
         gEeprom.VfoInfo[1].Modulation == MODULATION_CW) {
         CW_Tick10ms();
     }
+#endif
+
+#ifdef ENABLE_MESH_NETWORK
+    HERMES_Tick();
 #endif
 
     // TextInput Blink Hook

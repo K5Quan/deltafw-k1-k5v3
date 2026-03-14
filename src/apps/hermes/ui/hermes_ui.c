@@ -6,6 +6,7 @@
  */
 #ifdef ENABLE_MESH_NETWORK
 
+#include "apps/hermes/app/messaging.h"
 #include "apps/hermes/ui/hermes_ui.h"
 #include "apps/hermes/hermes.h"
 #include "apps/hermes/hermes_types.h"
@@ -42,12 +43,14 @@ static bool IsSameSender(int16_t a, int16_t b) {
     if (gHermesMessages[a].is_outgoing != gHermesMessages[b].is_outgoing) return false;
     if (gHermesMessages[a].is_outgoing) {
         return (gHermesMessages[a].addressing == gHermesMessages[b].addressing &&
-                memcmp(gHermesMessages[a].dest, gHermesMessages[b].dest, HM_NODE_ID_SIZE) == 0);
+                memcmp(gHermesMessages[a].addr, gHermesMessages[b].addr, HM_NODE_ID_SIZE) == 0);
     }
-    return memcmp(gHermesMessages[a].src, gHermesMessages[b].src, HM_NODE_ID_SIZE) == 0;
+    return memcmp(gHermesMessages[a].addr, gHermesMessages[b].addr, HM_NODE_ID_SIZE) == 0;
 }
 
-static bool IsTiny(const HermesMessage_t *m) { return (m->len > 22); }
+static bool IsTiny(const HermesMessage_t *m) { 
+    return (m->len > 22) || m->is_debug; 
+}
 
 static void GetLine(const char *txt, uint16_t tlen, uint8_t maxc, uint8_t idx,
                     uint16_t *out_start, uint16_t *out_len) {
@@ -67,30 +70,27 @@ static void GetLine(const char *txt, uint16_t tlen, uint8_t maxc, uint8_t idx,
     *out_start = 0; *out_len = 0;
 }
 
-static uint8_t CountLines(const HermesMessage_t *m) {
-    bool tiny = IsTiny(m);
+static uint8_t CountLines(const char *txt, uint8_t len, bool tiny) {
     uint8_t maxc = tiny ? 26 : 14;
     uint16_t pos = 0;
     uint8_t n = 0;
-    while (pos < m->len && n < 8) {
+    while (pos < len && n < 8) {
         uint16_t ll = 0, sp = 0xFFFF, ls = pos;
-        while (pos < m->len && ll < maxc) { if (m->text[pos] == ' ') sp = pos; pos++; ll++; }
-        if (pos < m->len && m->text[pos] != ' ' && sp != 0xFFFF && sp >= ls) pos = sp + 1;
+        while (pos < len && ll < maxc) { if (txt[pos] == ' ') sp = pos; pos++; ll++; }
+        if (pos < len && txt[pos] != ' ' && sp != 0xFFFF && sp >= ls) pos = sp + 1;
         n++;
-        while (pos < m->len && m->text[pos] == ' ') pos++;
+        while (pos < len && txt[pos] == ' ') pos++;
         if (ll == 0) break;
     }
     return n == 0 ? 1 : n;
 }
 
-static uint8_t BubbleWidth(int16_t i) {
-    const HermesMessage_t *m = &gHermesMessages[i];
-    bool tiny = IsTiny(m);
-    uint8_t lines = CountLines(m);
+static uint8_t BubbleWidthEx(const char *txt, uint8_t len, bool tiny) {
+    uint8_t lines = CountLines(txt, len, tiny);
     uint8_t w = 112;
     if (lines == 1) {
         uint16_t s, l;
-        GetLine(m->text, m->len, tiny ? 26 : 14, 0, &s, &l);
+        GetLine(txt, len, tiny ? 26 : 14, 0, &s, &l);
         w = l * (tiny ? 4 : 8) + 8;
     }
     return (w > 112) ? 112 : w;
@@ -98,24 +98,48 @@ static uint8_t BubbleWidth(int16_t i) {
 
 static uint8_t BubbleHeight(int16_t i) {
     const HermesMessage_t *m = &gHermesMessages[i];
+    char text[HM_MSG_MAX_TEXT + 1];
+    uint8_t len = HERMES_MSG_UnpackGSM7(m->payload, HM_PAYLOAD_SIZE, text, HM_MSG_MAX_TEXT + 1);
     bool tiny = IsTiny(m);
-    uint8_t lines = CountLines(m);
+    uint8_t lines = CountLines(text, len, tiny);
     uint8_t h = tiny ? (lines * 6 + 3) : (lines * 12 - 1);
     if (!IsSameSender(i, i + 1)) h += 2; else h -= 1;
-    if (!m->is_outgoing && !IsSameSender(i, i - 1)) h += 8;
+    if (!IsSameSender(i, i - 1)) {
+        if (!m->is_outgoing || m->addressing != HM_ADDR_BROADCAST) h += 8;
+    }
     return h < 1 ? 1 : h;
 }
 
-static void UI_DrawAckTick(uint8_t x, uint8_t y) {
-    // 4 rows x 5 columns tick
-    // Row 0: 0x01 (00001)
-    // Row 1: 0x02 (00010)
-    // Row 2: 0x14 (10100)
-    // Row 3: 0x08 (01000)
-    const uint8_t bitmap[] = { 0x01, 0x02, 0x14, 0x08 };
+static void UI_DrawSentTick(uint8_t x, uint8_t y) {
+    // 5x4 single checkmark
+    static const uint8_t sent_bits[] = {0x10,0x08,0x05,0x02};
     for (uint8_t r = 0; r < 4; r++) {
         for (uint8_t c = 0; c < 5; c++) {
-            if (bitmap[r] & (1 << (4 - c))) {
+            if (sent_bits[r] & (1 << c)) {
+                AG_PutPixel(x + c, y + r, 1);
+            }
+        }
+    }
+}
+
+static void UI_DrawClockIcon(uint8_t x, uint8_t y) {
+    static const uint8_t clock_bits[] = {0x0e, 0x19, 0x15, 0x11, 0x0e};
+    for (uint8_t r = 0; r < 5; r++) {
+        for (uint8_t c = 0; c < 5; c++) {
+            if (clock_bits[r] & (1 << c)) {
+                AG_PutPixel(x + c, y + r, 1);
+            }
+        }
+    }
+}
+
+static void UI_DrawAckTick(uint8_t x, uint8_t y) {
+    // 9x4 double checkmark
+    static const uint8_t double_tick[] = {0x10,0x01,0x88,0x00,0x55,0x00,0x22,0x00};
+    for (uint8_t r = 0; r < 4; r++) {
+        uint16_t row_bits = double_tick[r * 2] | (double_tick[r * 2 + 1] << 8);
+        for (uint8_t c = 0; c < 9; c++) {
+            if (row_bits & (1 << c)) {
                 AG_PutPixel(x + c, y + r, 1);
             }
         }
@@ -134,43 +158,61 @@ static void RenderChat(void) {
     const uint8_t area = 44;
     uint8_t total = 0;
     int16_t start = gHermesChatScroll;
+    
+    // Calculate how many messages fit on screen starting from scroll and going backwards
     while (start >= 0) {
         uint8_t h = BubbleHeight(start);
-        if (total + h > area && start != gHermesChatScroll) break;
-        total += h; start--;
+        if (total + h > area && start != gHermesChatScroll) {
+            start++; // The previous one did not fit, so start at the next one
+            break;
+        }
+        total += h;
+        if (start == 0) break;
+        start--;
     }
-    start++;
-
+    
+    // We now start drawing all available messages from `start` until screen is full or count reached
+    // We now start drawing all available messages from `start` until screen is full or count reached
     uint8_t y = 8;
     for (int16_t i = start; i < gHermesMsgCount && y < 54; i++) {
         HermesMessage_t *m = &gHermesMessages[i];
+        char mtext[HM_MSG_MAX_TEXT + 1];
+        uint8_t mlen = HERMES_MSG_UnpackGSM7(m->payload, HM_PAYLOAD_SIZE, mtext, HM_MSG_MAX_TEXT + 1);
+
         bool sel = (i == gHermesChatScroll);
         bool tiny = IsTiny(m);
-        uint8_t lines = CountLines(m);
+        uint8_t lines = CountLines(mtext, mlen, tiny);
         uint8_t bh = tiny ? (lines * 6 + 3) : (lines * 12 - 1);
-        uint8_t bw = BubbleWidth(i);
+        uint8_t bw = BubbleWidthEx(mtext, mlen, tiny);
         uint8_t bx = m->is_outgoing ? (124 - bw) : 2;
         uint8_t by = y;
 
         // Sender label for incoming
         if (!m->is_outgoing && !IsSameSender(i, i - 1)) {
             char name[24] = {0};
-            bool found = false;
-            // Scan contacts
-            for (uint8_t j = 0; j < 16; j++) {
-                HermesContactRecord_t rec;
-                if (Storage_ReadRecordIndexed(REC_HERMES_CONTACTS, j, &rec, 0, sizeof(rec))) {
-                    if (rec.fields.NodeID[0] != 0xFF && memcmp(rec.fields.NodeID, m->src, 6) == 0) {
-                        strncpy(name, rec.fields.Alias, 12);
-                        name[12] = '\0';
-                        found = true;
-                        break;
+            if (m->is_debug) {
+                strcpy(name, "$debug");
+            } else {
+                bool found = false;
+                name[0] = '@';
+                // Scan contacts
+                for (uint8_t j = 0; j < 16; j++) {
+                    HermesContactRecord_t rec;
+                    if (Storage_ReadRecordIndexed(REC_HERMES_CONTACTS, j, &rec, 0, sizeof(rec))) {
+                        if (rec.fields.NodeID[0] != 0xFF && memcmp(rec.fields.NodeID, m->addr, 6) == 0) {
+                            strncpy(name + 1, rec.fields.Alias, 12);
+                            name[13] = '\0';
+                            found = true;
+                            break;
+                        }
                     }
                 }
-            }
-            if (!found) {
-                // If Base40 valid, show callsign, else raw MAC
-                HERMES_Addr_Format(m->src, 0, name, sizeof(name)); // Try to format intelligently
+                if (!found) {
+                    char temp[20];
+                    HERMES_Addr_Format(m->addr, 0, temp, sizeof(temp));
+                    strncpy(name + 1, temp, 22);
+                    name[23] = '\0';
+                }
             }
             UI_PrintStringSmallest(name, 2, y - 7, false, true);
             by += 8;
@@ -180,7 +222,7 @@ static void RenderChat(void) {
         if (m->is_outgoing && m->addressing != HM_ADDR_BROADCAST && !IsSameSender(i, i - 1)) {
             char name[16] = "To:";
             char target[12];
-            HERMES_Addr_Decode(m->dest, target, sizeof(target));
+            HERMES_Addr_Decode(m->addr, target, sizeof(target));
             strcat(name, target);
             UI_PrintStringSmallest(name, bx, by - 7, false, true);
             by += 8;
@@ -190,22 +232,19 @@ static void RenderChat(void) {
         if (!m->is_outgoing && !m->is_read)
             AG_FillRect(1, by + 4, 2, 2, C_FILL);
 
-        // ACK tick
-        if (m->is_outgoing && m->is_acked) {
-            UI_DrawAckTick(bx - 7, by + bh - 5);
-        }
-
         // Bubble outline/fill
-        if (sel && !m->is_pending)
+        if (sel && !m->is_pending) {
             AG_FillRect(bx, by, bw, bh, C_FILL);
-        else {
+        } else {
             // Draw Outline (for non-selected or pending outgoing)
             AG_DrawVLine(bx, by, bh, C_FILL); 
             AG_DrawVLine(bx + bw - 1, by, bh, C_FILL);
             
             if (!IsSameSender(i, i - 1)) AG_DrawHLine(bx, by, bw, C_FILL);
             else {
-                uint8_t pbw = BubbleWidth(i - 1);
+                char ptxt[HM_MSG_MAX_TEXT + 1];
+                uint8_t plen = HERMES_MSG_UnpackGSM7(gHermesMessages[i-1].payload, HM_PAYLOAD_SIZE, ptxt, HM_MSG_MAX_TEXT + 1);
+                uint8_t pbw = BubbleWidthEx(ptxt, plen, IsTiny(&gHermesMessages[i-1]));
                 uint8_t pbx = gHermesMessages[i - 1].is_outgoing ? (124 - pbw) : 2;
                 if (bx < pbx) AG_DrawHLine(bx, by, pbx - bx, C_FILL);
                 if (bx + bw > pbx + pbw) AG_DrawHLine(pbx + pbw, by, (bx + bw) - (pbx + pbw), C_FILL);
@@ -213,26 +252,55 @@ static void RenderChat(void) {
             
             if (!IsSameSender(i, i + 1)) AG_DrawHLine(bx, by + bh - 1, bw, C_FILL);
             else {
-                uint8_t nbw = BubbleWidth(i + 1);
+                char ntxt[HM_MSG_MAX_TEXT + 1];
+                uint8_t nlen = HERMES_MSG_UnpackGSM7(gHermesMessages[i+1].payload, HM_PAYLOAD_SIZE, ntxt, HM_MSG_MAX_TEXT + 1);
+                uint8_t nbw = BubbleWidthEx(ntxt, nlen, IsTiny(&gHermesMessages[i+1]));
                 uint8_t nbx = gHermesMessages[i + 1].is_outgoing ? (124 - nbw) : 2;
                 if (bx < nbx) AG_DrawHLine(bx, by + bh - 1, nbx - bx, C_FILL);
                 if (bx + bw > nbx + nbw) AG_DrawHLine(nbx + nbw, by + bh - 1, (bx + bw) - (nbx + nbw), C_FILL);
             }
         }
 
+        // ACK tick / pending / failed indicators
+        if (m->is_outgoing) {
+            uint8_t indicator_x = bx - 14;
+            uint8_t indicator_y = by + bh - 6;
+
+            if (m->is_pending) {
+                // Pending: Clock icon
+                UI_DrawClockIcon(indicator_x + 3, indicator_y + 1);
+            } else if (m->is_acked) {
+                // Acked: Double check
+                UI_DrawAckTick(bx - 10, indicator_y);
+            } else if (m->addressing != HM_ADDR_BROADCAST && gHermesConfig.ack_mode > 0) {
+                // Failed (was expecting ACK but didn't get it and max retries reached)
+                UI_PrintStringSmallest("X", indicator_x + 7, indicator_y, false, true);
+            } else {
+                // Sent
+                UI_DrawSentTick(bx - 7, indicator_y);
+            }
+        }
+
         // Text
         uint8_t maxc = tiny ? 26 : 14;
+        // Selection Negation: If sel && not pending, tc is C_CLEAR (white on black bubble)
         Color tc = (sel && !m->is_pending) ? C_CLEAR : C_FILL;
 
         for (uint8_t l = 0; l < lines; l++) {
             uint16_t ls, ll;
-            GetLine(m->text, m->len, maxc, l, &ls, &ll);
+            GetLine(mtext, mlen, maxc, l, &ls, &ll);
             if (ll == 0 && l > 0) continue;
             char buf[32];
             uint8_t n = (ll > 31) ? 31 : (uint8_t)ll;
-            memcpy(buf, m->text + ls, n); buf[n] = '\0';
-            if (tiny) UI_PrintStringSmallest(buf, bx + 4, by + l * 6 - 6, false, tc == C_FILL);
-            else      AG_PrintMediumEx(bx + 4, by + 8 + l * 12, POS_L, tc, buf);
+            memcpy(buf, mtext + ls, n); buf[n] = '\0';
+            
+            if (tiny) {
+                // UI_PrintStringSmallest: fill=true draws white on black.
+                // We want fill=true if tc is C_CLEAR (negated)
+                UI_PrintStringSmallest(buf, bx + 4, by + 2 + l * 6, false, (tc == C_CLEAR));
+            } else {
+                AG_PrintMediumEx(bx + 4, by + 10 + l * 12, POS_L, tc, buf);
+            }
         }
 
         y += BubbleHeight(i);
@@ -257,33 +325,29 @@ static void OnComposeDone(void) {
     gHermesView = HM_VIEW_CHAT;
 
     if (len > 0) {
-        // Store outgoing message
-        uint8_t slot = gHermesMsgCount % HM_MSG_SLOTS;
-        HermesMessage_t *m = &gHermesMessages[slot];
+        // Shift messages if full to keep newest at the bottom
+        if (gHermesMsgCount >= HM_MSG_SLOTS) {
+            for (int i = 0; i < HM_MSG_SLOTS - 1; i++) {
+                gHermesMessages[i] = gHermesMessages[i + 1];
+            }
+            gHermesMsgCount = HM_MSG_SLOTS - 1;
+        }
+
+        HermesMessage_t *m = &gHermesMessages[gHermesMsgCount++];
         memset(m, 0, sizeof(*m));
-        memcpy(m->src, gHermesConfig.node_id, HM_NODE_ID_SIZE);
-        memcpy(m->dest, composeDestID, HM_NODE_ID_SIZE); 
+        memcpy(m->addr, composeDestID, HM_NODE_ID_SIZE); 
         m->addressing = composeAddrMode;
-        strncpy(m->text, composeBuffer, HM_MSG_MAX_TEXT);
-        m->len = len;
+        m->len = HERMES_MSG_PackGSM7(composeBuffer, len, m->payload);
         m->is_outgoing = true;
         m->is_pending = true;
-        if (gHermesMsgCount < HM_MSG_SLOTS) gHermesMsgCount++;
-        // Don't auto-select the new one yet because it's pending
-        // gHermesChatScroll = gHermesMsgCount - 1; 
+        m->is_debug = false;
         
-        // Find the last non-pending message to select
-        int8_t last_valid = -1;
-        for (int16_t i = gHermesMsgCount - 1; i >= 0; i--) {
-            if (!gHermesMessages[i].is_pending) {
-                last_valid = (int8_t)i;
-                break;
-            }
-        }
-        if (last_valid >= 0) gHermesChatScroll = last_valid;
-
-        // Trigger TX pipeline
-        HERMES_SendMessage(m);
+        // Auto-select the newly sent message immediately 
+        // to provide visual feedback that it is pending
+        gHermesChatScroll = gHermesMsgCount - 1;
+        
+        // Trigger TX pipeline (deferred so it doesn't block UI)
+        gHermesSendTrigger = true;
     }
     memset(composeBuffer, 0, sizeof(composeBuffer));
     gUpdateDisplay = true;
@@ -364,9 +428,9 @@ static void SaveSettings(void) {
     settings.fields.Enabled = gHermesConfig.enabled;
     settings.fields.RelayEnabled = gHermesConfig.relay_enabled;
     settings.fields.AckMode = gHermesConfig.ack_mode;
-    settings.fields.CryptoEnabled = gHermesConfig.crypto_enabled;
     settings.fields.TTL = gHermesConfig.ttl;
     settings.fields.TxPower = gHermesConfig.tx_power;
+    settings.fields.FskMute = gHermesConfig.fsk_mute ? 1 : 0;
 
     Storage_WriteRecord(REC_HERMES_SETTINGS, &settings, 0, sizeof(HermesSettings_t));
 }
@@ -454,17 +518,19 @@ static void OnSaltDone(void) {
 // ──── Getters / Setters ────
 static void GetEnabled(const MenuItem *i, char *b, uint8_t s)  { (void)i; (void)s; strcpy(b, gHermesConfig.enabled ? "ON" : "OFF"); }
 static void SetEnabled(const MenuItem *i, bool u)              { (void)i; (void)u; gHermesConfig.enabled ^= 1; gHermesEnabled = gHermesConfig.enabled; SaveSettings(); }
+ 
+static void GetDebug(const MenuItem *i, char *b, uint8_t s)    { (void)i; (void)s; strcpy(b, gHermesConfig.debug ? "ON" : "OFF"); }
+static void SetDebug(const MenuItem *i, bool u)                { (void)i; (void)u; gHermesConfig.debug ^= 1; SaveSettings(); }
 
-static void GetCrypto(const MenuItem *i, char *b, uint8_t s)   { (void)i; (void)s; strcpy(b, gHermesConfig.crypto_enabled ? "ON" : "OFF"); }
-static void SetCrypto(const MenuItem *i, bool u)               { (void)i; (void)u; gHermesConfig.crypto_enabled ^= 1; SaveSettings(); }
+static void GetFskMute(const MenuItem *i, char *b, uint8_t s)  { (void)i; (void)s; strcpy(b, gHermesConfig.fsk_mute ? "MUTE" : "HEAR"); }
+static void SetFskMute(const MenuItem *i, bool u)              { (void)i; (void)u; gHermesConfig.fsk_mute ^= 1; SaveSettings(); }
 
 static void GetNodeID(const MenuItem *i, char *b, uint8_t s) {
     (void)i; (void)s;
     // Show as MAC with : separators when using HW or Custom policy
     if (gHermesConfig.mac_policy != 2) {
         // Show full MAC for menu: XX:XX:XX:XX:XX:XX
-        const uint8_t *id = gHermesConfig.node_id;
-        sprintf(b, "%02X:%02X:%02X:%02X:%02X:%02X", id[0], id[1], id[2], id[3], id[4], id[5]);
+        HERMES_Addr_FormatMAC(gHermesConfig.node_id, b, s);
     } else {
         // Alias-based: show decoded callsign
         HERMES_Addr_Decode(gHermesConfig.node_id, b, s);
@@ -526,16 +592,19 @@ static bool MA_EditSalt(const MenuItem *item, KEY_Code_t key, bool kp, bool kh) 
     return true;
 }
 
-static void GetFreqMode(const MenuItem *i, char *b, uint8_t s) { (void)i; (void)s; const char* m[]={"LPD66", "VFO", "MEM"}; strcpy(b, m[gHermesConfig.freq_mode]); }
-static void SetFreqMode(const MenuItem *i, bool u) { (void)i; gHermesConfig.freq_mode = u ? (gHermesConfig.freq_mode==2?0:gHermesConfig.freq_mode+1) : (gHermesConfig.freq_mode==0?2:gHermesConfig.freq_mode-1); SaveSettings(); }
+static const char* FreqModes[] = {"LPD66", "VFO", "MEM"};
+static void GetFreqMode(const MenuItem *i, char *b, uint8_t s) { (void)i; (void)s; strcpy(b, FreqModes[gHermesConfig.freq_mode]); }
+static void SetFreqMode(const MenuItem *i, bool u) { (void)i; gHermesConfig.freq_mode = u ? (gHermesConfig.freq_mode==2?0:gHermesConfig.freq_mode+1) : (gHermesConfig.freq_mode==0?2:gHermesConfig.freq_mode-1); HERMES_UpdateFrequency(); SaveSettings(); }
  
 static void GetRelay(const MenuItem *i, char *b, uint8_t s) { (void)i; (void)s; strcpy(b, gHermesConfig.relay_enabled ? "ON" : "OFF"); }
 static void SetRelay(const MenuItem *i, bool u) { (void)i; (void)u; gHermesConfig.relay_enabled ^= 1; SaveSettings(); }
  
-static void GetAck(const MenuItem *i, char *b, uint8_t s) { (void)i; (void)s; const char* m[]={"OFF", "MANUAL", "AUTO"}; strcpy(b, m[gHermesConfig.ack_mode]); }
-static void SetAck(const MenuItem *i, bool u) { (void)i; gHermesConfig.ack_mode = u ? (gHermesConfig.ack_mode==2?0:gHermesConfig.ack_mode+1) : (gHermesConfig.ack_mode==0?2:gHermesConfig.ack_mode-1); SaveSettings(); }
+static const char* AckModes[] = {"OFF", "MANUAL", "AUTO"};
+static void GetAck(const MenuItem *i, char *b, uint8_t s) { (void)i; (void)s; strcpy(b, AckModes[gHermesConfig.ack_mode]); }
+static void SetAck(const MenuItem *i, bool u) { (void)i; (void)u; gHermesConfig.ack_mode = (gHermesConfig.ack_mode + 1) % 3; SaveSettings(); }
 
-static void GetMacPolicy(const MenuItem *i, char *b, uint8_t s) { (void)i; (void)s; const char* m[]={"HW", "CUSTOM", "ALIAS"}; strcpy(b, m[gHermesConfig.mac_policy]); }
+static const char* MacPolicies[] = {"HW", "CUSTOM", "ALIAS"};
+static void GetMacPolicy(const MenuItem *i, char *b, uint8_t s) { (void)i; (void)s; strcpy(b, MacPolicies[gHermesConfig.mac_policy]); }
 static void SetMacPolicy(const MenuItem *i, bool u) {
     (void)i;
     gHermesConfig.mac_policy = u ? (gHermesConfig.mac_policy==2?0:gHermesConfig.mac_policy+1) : (gHermesConfig.mac_policy==0?2:gHermesConfig.mac_policy-1);
@@ -556,17 +625,17 @@ static void SetMacPolicy(const MenuItem *i, bool u) {
     HERMES_UI_Init();
 }
 
-static void GetTxPwr(const MenuItem *i, char *b, uint8_t s) { (void)i; (void)s; const char* m[]={"LOW", "MID", "HIGH"}; strcpy(b, m[gHermesConfig.tx_power]); }
+static const char* TxPowers[] = {"LOW", "MID", "HIGH"};
+static void GetTxPwr(const MenuItem *i, char *b, uint8_t s) { (void)i; (void)s; strcpy(b, TxPowers[gHermesConfig.tx_power]); }
 static void SetTxPwr(const MenuItem *i, bool u) { (void)i; gHermesConfig.tx_power = u ? (gHermesConfig.tx_power==2?0:gHermesConfig.tx_power+1) : (gHermesConfig.tx_power==0?2:gHermesConfig.tx_power-1); SaveSettings(); }
 
-static void GetTTL(const MenuItem *i, char *b, uint8_t s) { (void)i; (void)s; sprintf(b, "%d", gHermesConfig.ttl); }
+static void GetTTL(const MenuItem *i, char *b, uint8_t s) { (void)i; (void)s; NUMBER_ToDecimal(b, gHermesConfig.ttl, 2, false); }
 static void SetTTL(const MenuItem *i, bool u) { (void)i; if (u) { if (gHermesConfig.ttl < 15) gHermesConfig.ttl++; } else { if (gHermesConfig.ttl > 1) gHermesConfig.ttl--; } SaveSettings(); }
 
 // All possible settings items (superset)
 static const MenuItem settingsItems[] = {
     // ── General ──
     { .name = "Hermes",      .get_value_text = GetEnabled,    .change_value = SetEnabled,    .type = M_ITEM_SELECT },
-    { .name = "Encryption",  .get_value_text = GetCrypto,     .change_value = SetCrypto,     .type = M_ITEM_SELECT },
     // ── Identity ──
     { .name = "ID Source",   .get_value_text = GetMacPolicy,  .change_value = SetMacPolicy,  .type = M_ITEM_SELECT },
     { .name = "Alias",       .get_value_text = GetAlias,      .action = MA_EditAlias,        .type = M_ITEM_SELECT },
@@ -581,6 +650,8 @@ static const MenuItem settingsItems[] = {
     // ── Mesh ──
     { .name = "Relay",       .get_value_text = GetRelay,      .change_value = SetRelay,      .type = M_ITEM_SELECT },
     { .name = "ACK Mode",    .get_value_text = GetAck,        .change_value = SetAck,        .type = M_ITEM_SELECT },
+    { .name = "Debug Mode",  .get_value_text = GetDebug,      .change_value = SetDebug,      .type = M_ITEM_SELECT },
+    { .name = "FSK Audio",   .get_value_text = GetFskMute,    .change_value = SetFskMute,    .type = M_ITEM_SELECT },
 };
 static Menu settingsMenu = {
     .title = "Settings", .items = settingsItems, .num_items = sizeof(settingsItems) / sizeof(settingsItems[0]),
@@ -635,12 +706,11 @@ bool MA_DeleteContact(const MenuItem *i, KEY_Code_t k, bool kp, bool kh) {
 }
 
 static void GetContactIDStr(const MenuItem *i, char *b, uint8_t s) {
-    (void)s;
     uint8_t idx = i - contactMenuItems;
     HermesContactRecord_t rec;
     Storage_ReadRecordIndexed(REC_HERMES_CONTACTS, idx, &rec, 0, sizeof(rec));
     // Format as full MAC XX:XX:XX:XX:XX:XX
-    sprintf(b, "%02X:%02X:%02X:%02X:%02X:%02X", rec.fields.NodeID[0], rec.fields.NodeID[1], rec.fields.NodeID[2], rec.fields.NodeID[3], rec.fields.NodeID[4], rec.fields.NodeID[5]);
+    HERMES_Addr_FormatMAC(rec.fields.NodeID, b, s);
 }
 
 static void GetContactName(const MenuItem *i, char *b, uint8_t s) {
@@ -665,7 +735,7 @@ static void GetContactName(const MenuItem *i, char *b, uint8_t s) {
         strncpy(b, rec.fields.Alias, s);
     } else {
         // Fallback: show full MAC-style ID
-        sprintf(b, "%02X:%02X:%02X:%02X:%02X:%02X", rec.fields.NodeID[0], rec.fields.NodeID[1], rec.fields.NodeID[2], rec.fields.NodeID[3], rec.fields.NodeID[4], rec.fields.NodeID[5]);
+        HERMES_Addr_FormatMAC(rec.fields.NodeID, b, s);
     }
 }
 
