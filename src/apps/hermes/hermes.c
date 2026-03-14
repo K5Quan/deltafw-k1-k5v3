@@ -9,6 +9,7 @@
 #ifdef ENABLE_MESH_NETWORK
 
 #include "apps/hermes/hermes.h"
+#include "features/audio/audio.h"
 #include "apps/hermes/ui/hermes_ui.h"
 #include "apps/hermes/physical/phy.h"
 #include "apps/hermes/datalink/framing.h"
@@ -21,8 +22,10 @@
 #include "ui/ui.h"
 #include "features/storage/storage.h"
 #include "features/radio/radio.h"
-#include "helper/trng.h"
+#include "features/radio/functions.h"
 #include <string.h>
+#include <stdio.h>
+#include "ui/helper.h"
 
 #ifdef ENABLE_HERMES_MESSENGER
 #include "apps/hermes/app/messaging.h"
@@ -86,99 +89,81 @@ void HERMES_Init(void) {
         settings.fields.Magic = 0x484D;
         settings.fields.MacPolicy = 0; // Hardware MAC
         strcpy(settings.fields.Alias, "NOCALL");
-        settings.fields.HasPasscode = false;
+        memset(settings.fields.Passcode, 0, 32); 
+        settings.fields.HasPasscode = 0;
         settings.fields.FreqMode = 0; // LPD66
         settings.fields.FreqCh = 0;
-        settings.fields.Enabled = true;
-        settings.fields.RelayEnabled = true; // Default ON
+        settings.fields.Enabled = 1;
+        settings.fields.RelayEnabled = 1; // Default ON
         settings.fields.AckMode = 2; // Auto
-        settings.fields.CryptoEnabled = false;
-        settings.fields.TTL = 7;
+        settings.fields.TTL = 5;
         settings.fields.TxPower = 1; // Mid
+        settings.fields.FskMute = 1; // Default: mute FSK audio
+        memset(settings.fields.Salt, 0, 16);
+        memcpy(settings.fields.Salt, "HERMES", 6);
         Storage_WriteRecord(REC_HERMES_SETTINGS, &settings, 0, sizeof(HermesSettings_t));
     }
 
-    // Map to runtime config
-    // Apply Frequency Setting
-    gHermesConfig.freq_ch = settings.fields.FreqCh;
-    if (settings.fields.FreqMode == 0) {
-        gHermesConfig.frequency = 43335000; // LPD66 433.350 MHz
-    } else if (settings.fields.FreqMode == 1) {
-        // Current VFO
-        gHermesConfig.frequency = gTxVfo ? gTxVfo->pTX->Frequency : 43335000;
-    } else {
-        // Memory channel
-        struct {
-            uint32_t Frequency;
-            uint32_t Offset;
-        } __attribute__((packed)) info;
-        if (Storage_ReadRecordIndexed(REC_CHANNEL_DATA, settings.fields.FreqCh, &info, 0, sizeof(info))) {
-            gHermesConfig.frequency = (info.Frequency != 0xFFFFFFFF && info.Frequency != 0) ? info.Frequency : 43335000;
-        } else {
-            gHermesConfig.frequency = 43335000;
-        }
-    }
-    
-    gHermesConfig.sync_word[0] = 0x2F;
-    gHermesConfig.sync_word[1] = 0x2A;
-    gHermesConfig.sync_word[2] = 0x11;
-    gHermesConfig.sync_word[3] = 0xDB;
-    gHermesConfig.ttl          = settings.fields.TTL;
-    gHermesConfig.relay_enabled = settings.fields.RelayEnabled;
-    gHermesConfig.ack_mode     = settings.fields.AckMode;
-    gHermesConfig.freq_mode    = settings.fields.FreqMode;
-    gHermesConfig.mac_policy   = settings.fields.MacPolicy;
-    gHermesConfig.crypto_enabled = settings.fields.CryptoEnabled;
-    gHermesConfig.enabled      = settings.fields.Enabled;
-    gHermesConfig.tx_power     = settings.fields.TxPower;
+    // Explicit field-by-field mapping to avoid struct padding surprises
+    gHermesConfig.mac_policy    = settings.fields.MacPolicy <= 2 ? settings.fields.MacPolicy : 2;
+    memcpy(gHermesConfig.node_id, settings.fields.CustomMac, 6);
     strncpy(gHermesConfig.alias, settings.fields.Alias, 12);
     gHermesConfig.alias[12] = '\0';
     
-    // 3. Network Keys (KDF RFC §2)
-    if (settings.fields.HasPasscode) {
-        strncpy(gHermesConfig.passcode, settings.fields.Passcode, 32);
-        gHermesConfig.passcode[32] = '\0';
-        memcpy(gHermesConfig.salt, settings.fields.Salt, 16);
-    } else {
-        // Default Hermes Passcode string
-        const char *def = "Hermes Default Mesh Key 2024";
-        strncpy(gHermesConfig.passcode, def, 32);
-        gHermesConfig.passcode[32] = '\0';
-        // Default salt (arbitrary for default network)
-        memset(gHermesConfig.salt, 0x55, 16);
-    }
+    // Passcode Handling
+    strncpy(gHermesConfig.passcode, settings.fields.Passcode, 32);
+    gHermesConfig.passcode[32] = '\0';
+    memcpy(gHermesConfig.salt, settings.fields.Salt, 16);
+
+    gHermesConfig.enabled       = (settings.fields.Enabled != 0);
+    gHermesConfig.relay_enabled = (settings.fields.RelayEnabled != 0);
+    gHermesConfig.ack_mode      = settings.fields.AckMode <= 2 ? settings.fields.AckMode : 2;
+    gHermesConfig.freq_mode     = settings.fields.FreqMode <= 2 ? settings.fields.FreqMode : 1;
+    gHermesConfig.freq_ch       = settings.fields.FreqCh;
+    gHermesConfig.ttl           = (settings.fields.TTL >= 1 && settings.fields.TTL <= 15) ? settings.fields.TTL : 3;
+    gHermesConfig.tx_power      = settings.fields.TxPower <= 2 ? settings.fields.TxPower : 1;
+    gHermesConfig.debug         = (settings.fields.Debug != 0);
+    gHermesConfig.fsk_mute      = (settings.fields.FskMute != 0);
+
+    gHermesEnabled = gHermesConfig.enabled;
     
-    // Always derive the actual Network Key (K_net) on boot
-    // This performs the 10,000 iteration hardening loop (RFC §2.1.2)
-    HERMES_KDF_DeriveNetworkKey(gHermesConfig.passcode, gHermesConfig.salt, gHermesConfig.net_key);
-
-    // Apply MAC Policy
-    if (settings.fields.MacPolicy == 1) {       // Custom Hex MAC
-        memcpy(gHermesConfig.node_id, settings.fields.CustomMac, 6);
-    } else if (settings.fields.MacPolicy == 2) { // Alias base40
-        HERMES_Addr_Encode(settings.fields.Alias, gHermesConfig.node_id);
-    } else {                                    // Hardware MAC (derived from TRNG unseeded state or CPUID)
-        // Note: For deterministic hw mac across boots we rely on CPUID, 
-        // TRNG is truly random, so let's use the low bits of CPU UID (assumed known location or just random for now if not available)
-        // Py32F071 CPU UID is at 0x1FFF0E00
-        uint8_t *uid = (uint8_t *)0x1FFF0E00;
-        gHermesConfig.node_id[0] = uid[0] ^ uid[6];
-        gHermesConfig.node_id[1] = uid[1] ^ uid[7];
-        gHermesConfig.node_id[2] = uid[2] ^ uid[8];
-        gHermesConfig.node_id[3] = uid[3] ^ uid[9];
-        gHermesConfig.node_id[4] = uid[4] ^ uid[10];
-        gHermesConfig.node_id[5] = uid[5] ^ uid[11];
-    }
-
+    HERMES_UpdateFrequency();
+    
+    // 3. Network Keys (KDF RFC §2) — Initial Setup
     static bool gHermesInitialized = false;
     if (!gHermesInitialized) {
         memset(gHermesMessages, 0, sizeof(gHermesMessages));
         gHermesMsgCount      = 0;
         gHermesHasNewMessage = false;
-        gHermesInitialized = true;
+
+        // Passcode and Salt from settings
+        strncpy(gHermesConfig.passcode, settings.fields.Passcode, 32);
+        gHermesConfig.passcode[32] = '\0';
+        memcpy(gHermesConfig.salt, settings.fields.Salt, 16);
+        
+        // Always derive the actual Network Key (K_net) on boot
+        // This performs the 10,000 iteration hardening loop (RFC §2.1.2)
+        HERMES_KDF_DeriveNetworkKey(gHermesConfig.passcode, gHermesConfig.salt, gHermesConfig.net_key);
+
+        // Apply MAC Policy
+        if (settings.fields.MacPolicy == 1) {       // Custom Hex MAC
+            memcpy(gHermesConfig.node_id, settings.fields.CustomMac, 6);
+        } else if (settings.fields.MacPolicy == 2) { // Alias base40
+            HERMES_Addr_Encode(settings.fields.Alias, gHermesConfig.node_id);
+        } else {                                    // Hardware MAC
+            uint8_t *uid = (uint8_t *)0x1FFF0E00;
+            gHermesConfig.node_id[0] = uid[0] ^ uid[6];
+            gHermesConfig.node_id[1] = uid[1] ^ uid[7];
+            gHermesConfig.node_id[2] = uid[2] ^ uid[8];
+            gHermesConfig.node_id[3] = uid[3] ^ uid[9];
+            gHermesConfig.node_id[4] = uid[4] ^ uid[10];
+            gHermesConfig.node_id[5] = uid[5] ^ uid[11];
+        }
+
+        gHermesInitialized   = true;
     }
 
-    HERMES_PHY_Init(gHermesConfig.sync_word);
+    HERMES_PHY_Init();
 
 #ifdef ENABLE_HERMES_DISCOVERY
     HERMES_DISC_Init();
@@ -190,8 +175,29 @@ void HERMES_Init(void) {
     HERMES_ARQ_Init();
 #endif
 
-    gHermesEnabled = true;
     HERMES_UI_Init();
+}
+
+void HERMES_UpdateFrequency(void) {
+    if (gHermesConfig.freq_mode == 0) {
+        gHermesConfig.frequency = 43335000; // LPD66 433.350 MHz
+    } else if (gHermesConfig.freq_mode == 1) {
+        gHermesConfig.frequency = gTxVfo ? gTxVfo->pTX->Frequency : 43335000;
+    } else {
+        struct {
+            uint32_t Frequency;
+            uint32_t Offset;
+        } __attribute__((packed)) info;
+        if (Storage_ReadRecordIndexed(REC_CHANNEL_DATA, gHermesConfig.freq_ch, &info, 0, sizeof(info))) {
+            gHermesConfig.frequency = (info.Frequency != 0xFFFFFFFF && info.Frequency != 0) ? info.Frequency : 43335000;
+        } else {
+            gHermesConfig.frequency = 43335000;
+        }
+    }
+    
+    // Apply immediately to BK4819
+    BK4819_SetFrequency(gHermesConfig.frequency);
+    BK4819_PickRXFilterPathBasedOnFrequency(gHermesConfig.frequency);
 }
 
 #ifdef ENABLE_HERMES_MESSENGER
@@ -247,17 +253,13 @@ void HERMES_ProcessKeys(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld) {
         switch (Key) {
             case KEY_UP:
                 if (gHermesChatScroll > 0) {
-                    int8_t next = gHermesChatScroll - 1;
-                    while (next >= 0 && gHermesMessages[next].is_pending) next--;
-                    if (next >= 0) gHermesChatScroll = next;
+                    gHermesChatScroll--;
                 }
                 gUpdateDisplay = true;
                 return;
             case KEY_DOWN:
                 if (gHermesChatScroll < gHermesMsgCount - 1) {
-                    int8_t next = gHermesChatScroll + 1;
-                    while (next < gHermesMsgCount && gHermesMessages[next].is_pending) next++;
-                    if (next < gHermesMsgCount) gHermesChatScroll = next;
+                    gHermesChatScroll++;
                 }
                 gUpdateDisplay = true;
                 return;
@@ -322,23 +324,36 @@ static void ProcessReceivedFrame(void) {
         return;
 
     // Security - Outer Layer Deobfuscation (RFC §3)
-    if (gHermesConfig.crypto_enabled) {
-        uint32_t sw = sync_word_u32();
-        uint32_t freq = gHermesConfig.frequency;
+    uint32_t sw = sync_word_u32();
+    uint32_t freq = gHermesConfig.frequency;
 
-        // 1. Verify Outer MAC (before deobfuscation — MAC covers obfuscated block)
-        if (!HERMES_Seal_VerifyOuterMAC(&block, gHermesConfig.net_key, sw, freq)) {
-            return; // Drop: header tampered or wrong network key
-        }
-
-        // 2. Deobfuscate Outer Layer (Hop)
-        HERMES_Seal_DeobfuscateOuter(&block, gHermesConfig.net_key, sw, freq);
+    // RFC §5.3: Outer seal (Deduplication & Router visibility) — Always active
+    if (!HERMES_Seal_VerifyOuterMAC((HermesDataBlock_t *)rx_buffer, gHermesConfig.net_key, sw, freq)) {
+        return; // Failed outer HMAC or repeat nonce
     }
+    // 2. Deobfuscate Outer Layer (Hop)
+    HERMES_Seal_DeobfuscateOuter(&block, gHermesConfig.net_key, sw, freq);
 
     uint8_t type = HM_HDR_Type(&block.header);
 
 #ifdef ENABLE_HERMES_ROUTER
-    if (HERMES_Route_IsDuplicate(block.header.packet_id)) return;
+    if (HERMES_Route_IsDuplicate(block.header.packet_id)) {
+        // Implicit ACK: If we hear our own packet being rebroadcasted by a neighbor
+        if (memcmp(block.header.src, gHermesConfig.node_id, HM_NODE_ID_SIZE) == 0) {
+            for (uint8_t i = 0; i < gHermesMsgCount; i++) {
+                if (gHermesMessages[i].is_outgoing && 
+                    gHermesMessages[i].is_pending &&
+                    memcmp(gHermesMessages[i].packet_id, block.header.packet_id, HM_PACKET_ID_SIZE) == 0) {
+                    
+                    gHermesMessages[i].is_pending = false;
+                    gHermesMessages[i].is_acked = true;
+                    gUpdateDisplay = true;
+                    break;
+                }
+            }
+        }
+        return;
+    }
     HERMES_Route_Record(block.header.packet_id);
 
     if (gHermesConfig.relay_enabled &&
@@ -355,45 +370,47 @@ static void ProcessReceivedFrame(void) {
 #ifdef ENABLE_HERMES_MESSENGER
     if (type == HM_TYPE_MESSAGE) {
         // Security - Inner Layer Decryption (RFC §4, §5)
-        if (gHermesConfig.crypto_enabled) {
-            uint8_t key[32];
-            uint8_t addr_mode = HM_HDR_AddrMode(&block.header);
-            uint8_t label;
-            uint8_t secret[32];
-            bool    has_secret = false;
+        uint8_t key[32];
+        uint8_t addr_mode = HM_HDR_AddrMode(&block.header);
+        uint8_t label;
+        uint8_t secret[32];
+        bool    has_secret = false;
  
-            switch (addr_mode) {
-                case HM_ADDR_UNICAST:   
-                    label = HM_LABEL_UNICAST;   
-                    has_secret = HERMES_GetContactSecret(block.header.src, secret);
-                    break;
-                case HM_ADDR_MULTICAST: 
-                    label = HM_LABEL_MULTICAST; 
-                    has_secret = HERMES_GetContactSecret(block.header.dest, secret);
-                    break;
-                case HM_ADDR_BROADCAST: label = HM_LABEL_BROADCAST; break;
-                case HM_ADDR_DISCOVER:  label = HM_LABEL_DISCOVERY; break;
-                default:                label = HM_LABEL_BROADCAST; break;
-            }
- 
-            // RFC §5: Use OUR node_id as destination (receiver derives using own address)
-            HERMES_KDF_DeriveTrafficKey(gHermesConfig.net_key, label,
-                                         gHermesConfig.node_id, has_secret ? secret : NULL, key);
-
-            if (!HERMES_Seal_DecryptInner(&block, key))
-                return; // Dropped: invalid inner MAC or decryption failed
+        switch (addr_mode) {
+            case HM_ADDR_UNICAST:   
+                label = HM_LABEL_UNICAST;   
+                has_secret = HERMES_GetContactSecret(block.header.src, secret);
+                break;
+            case HM_ADDR_MULTICAST: 
+                label = HM_LABEL_MULTICAST; 
+                has_secret = HERMES_GetContactSecret(block.header.dest, secret);
+                break;
+            case HM_ADDR_BROADCAST: label = HM_LABEL_BROADCAST; break;
+            case HM_ADDR_DISCOVER:  label = HM_LABEL_DISCOVERY; break;
+            default:                label = HM_LABEL_BROADCAST; break;
         }
+ 
+        // RFC §5: Use OUR node_id as destination (receiver derives using own address)
+        HERMES_KDF_DeriveTrafficKey(gHermesConfig.net_key, label,
+                                     gHermesConfig.node_id, has_secret ? secret : NULL, key);
 
-        char text[HM_MSG_MAX_TEXT + 1];
-        uint8_t text_len = HERMES_MSG_UnpackGSM7(block.payload, HM_PAYLOAD_SIZE,
-                                                  text, HM_MSG_MAX_TEXT + 1);
-        if (text_len > 0 && gHermesMsgCount < HM_MSG_SLOTS) {
+        if (!HERMES_Seal_DecryptInner(&block, key))
+            return; // Dropped: invalid inner MAC or decryption failed
+
+        if (HERMES_MSG_OctetCount(block.payload, HM_PAYLOAD_SIZE) > 0) {
+            // Shift messages if full
+            if (gHermesMsgCount >= HM_MSG_SLOTS) {
+                for (int i = 0; i < HM_MSG_SLOTS - 1; i++) {
+                    gHermesMessages[i] = gHermesMessages[i + 1];
+                }
+                gHermesMsgCount = HM_MSG_SLOTS - 1;
+            }
+
             HermesMessage_t *m = &gHermesMessages[gHermesMsgCount++];
             memset(m, 0, sizeof(*m));
-            memcpy(m->src, block.header.src, HM_NODE_ID_SIZE);
-            memcpy(m->dest, block.header.dest, HM_NODE_ID_SIZE);
-            strncpy(m->text, text, HM_MSG_MAX_TEXT);
-            m->len         = text_len;
+            memcpy(m->addr, block.header.src, HM_NODE_ID_SIZE);
+            memcpy(m->payload, block.payload, HM_PAYLOAD_SIZE);
+            m->len         = HM_MSG_MAX_TEXT; // Unpack logic handles this
             m->is_outgoing = false;
             m->addressing  = HM_HDR_AddrMode(&block.header);
             gHermesHasNewMessage = true;
@@ -416,7 +433,7 @@ static void ProcessReceivedFrame(void) {
             // Note: ACKs are always sent direct via CSMA, never queued in ARQ (otherwise infinite loop)
             HermesFrame_t ack_frame;
             if (HERMES_Frame_Pack(&ack_block, &ack_frame, sync_word_u32())) {
-                HERMES_CSMA_Transmit(ack_frame.raw, sizeof(ack_frame.raw));
+                HERMES_CSMA_Transmit(ack_frame.raw, sizeof(ack_frame.raw), HM_PRIO_CRITICAL);
             }
         }
     } else if (type == HM_TYPE_ACK) {
@@ -432,15 +449,19 @@ static void ProcessReceivedFrame(void) {
                         
                         gHermesMessages[i].is_pending = false;
                         gHermesMessages[i].is_acked = true;
-                        // Auto-select once sent/acked
-                        gHermesChatScroll = i;
-                        gUpdateDisplay = true;
                         break;
                     }
                 }
-        }
     }
+}
 #endif
+
+    // Auto-scroll to new incoming message if we were at the end
+    if (gHermesView == HM_VIEW_CHAT && gHermesChatScroll == (int16_t)gHermesMsgCount - 2) {
+        gHermesChatScroll = (int16_t)gHermesMsgCount - 1;
+    }
+    gUpdateDisplay = true;
+    }
 
 #ifdef ENABLE_HERMES_TELEMETRY
     else if (type == HM_TYPE_TELEMETRY) {
@@ -459,7 +480,6 @@ static void ProcessReceivedFrame(void) {
                 }
             }
 #endif
-        }
         }
     }
 #endif
@@ -482,7 +502,7 @@ static void ProcessReceivedFrame(void) {
             if (HERMES_PING_InsertHop(block.payload, gHermesConfig.node_id)) {
                 HermesFrame_t frame;
                 if (HERMES_Frame_Pack(&block, &frame, sync_word_u32())) {
-                     HERMES_CSMA_Transmit(frame.raw, sizeof(frame.raw));
+                     HERMES_CSMA_Transmit(frame.raw, sizeof(frame.raw), HM_PRIO_NORMAL);
                 }
             }
         }
@@ -494,72 +514,126 @@ static void ProcessReceivedFrame(void) {
 // TX Pipeline
 // ═══════════════════════════════════════════════════════════
 
-void HERMES_SendMessage(const HermesMessage_t *m) {
+void HERMES_SendMessage(HermesMessage_t *m_ptr) {
 #ifdef ENABLE_HERMES_MESSENGER
+    // Store message data locally to avoid issues if gHermesMessages array shifts due to logs
+    HermesMessage_t m;
+    memcpy(&m, m_ptr, sizeof(HermesMessage_t));
+
     HermesDataBlock_t block;
     memset(&block, 0, sizeof(block));
 
     // 1. Build Header
     HERMES_Pkt_Build(&block.header,
                      HM_TYPE_MESSAGE,
-                     m->addressing,
+                     m.addressing,
                      gHermesConfig.ttl,
-                     (gHermesConfig.ack_mode > 0),
-                     m->dest,
-                     m->src);
+                     (gHermesConfig.ack_mode > 0 && m.addressing == HM_ADDR_UNICAST),
+                     m.addr,
+                     gHermesConfig.node_id);
 
-    // 2. Encode Payload (GSM-7)
-    uint8_t packed_len = HERMES_MSG_PackGSM7(m->text, m->len, block.payload);
-    (void)packed_len; // padded with zeros automatically by memset
+    memcpy(m.packet_id, block.header.packet_id, HM_PACKET_ID_SIZE);
+    memcpy(m_ptr->packet_id, block.header.packet_id, HM_PACKET_ID_SIZE);
 
-    // 3. Security Layer (RFC §4, §5)
-    if (gHermesConfig.crypto_enabled) {
-        uint8_t k_scope[32];
-        uint8_t label;
-        uint8_t secret[32];
-        bool    has_secret = false;
- 
-        switch (m->addressing) {
-            case HM_ADDR_UNICAST:   
-                label = HM_LABEL_UNICAST;   
-                has_secret = HERMES_GetContactSecret(m->dest, secret);
-                break;
-            case HM_ADDR_MULTICAST: 
-                label = HM_LABEL_MULTICAST; 
-                has_secret = HERMES_GetContactSecret(m->dest, secret);
-                break;
-            case HM_ADDR_BROADCAST: label = HM_LABEL_BROADCAST; break;
-            case HM_ADDR_DISCOVER:  label = HM_LABEL_DISCOVERY; break;
-            default:                label = HM_LABEL_BROADCAST; break;
-        }
- 
-        // RFC §5: Derive Traffic Key using destination + label + secret
-        HERMES_KDF_DeriveTrafficKey(gHermesConfig.net_key, label,
-                                     m->dest, has_secret ? secret : NULL, k_scope);
+    // Use already packed payload from the message struct
+    memcpy(block.payload, m.payload, HM_PAYLOAD_SIZE);
 
-        // Inner: encrypt payload+source using AEAD (E2E)
-        HERMES_Seal_EncryptInner(&block, k_scope);
+    if (gHermesConfig.debug) {
+        char buf[32];
+        strcpy(buf, "TX ");
+        uint8_t mode = (uint8_t)m.addressing;
+        NUMBER_ToHex(buf + 3, mode, 2);
+        strcat(buf, " to ");
+        char target[12];
+        HERMES_Addr_Decode(m.addr, target, sizeof(target));
+        strcat(buf, target);
+        HERMES_DebugLog(buf);
+    }
 
-        uint32_t sw = sync_word_u32();
-        uint32_t freq = gHermesConfig.frequency;
+    // 2. Security Layer (RFC §4, §5) - Always Encrypted
+    uint8_t k_scope[32];
+    uint8_t label;
+    uint8_t secret[32];
+    bool    has_secret = false;
 
-        // Outer: obfuscate packet (Hop)
-        HERMES_Seal_ObfuscateOuter(&block, gHermesConfig.net_key, sw, freq);
-        // Bind Outer MAC to obfuscated block
-        HERMES_Seal_CalculateOuterMAC(&block, gHermesConfig.net_key, sw, freq);
+    switch (m.addressing) {
+        case HM_ADDR_UNICAST:   
+            label = HM_LABEL_UNICAST;   
+            has_secret = HERMES_GetContactSecret(m.addr, secret);
+            break;
+        case HM_ADDR_MULTICAST: 
+            label = HM_LABEL_MULTICAST; 
+            has_secret = HERMES_GetContactSecret(m.addr, secret);
+            break;
+        case HM_ADDR_BROADCAST: label = HM_LABEL_BROADCAST; break;
+        case HM_ADDR_DISCOVER:  label = HM_LABEL_DISCOVERY; break;
+        default:                label = HM_LABEL_BROADCAST; break;
+    }
+
+    HERMES_KDF_DeriveTrafficKey(gHermesConfig.net_key, label,
+                                 m.addr, has_secret ? secret : NULL, k_scope);
+
+    HermesFrame_t frame;
+    // Inner: encrypt payload+source using AEAD (E2E)
+    HERMES_Seal_EncryptInner(&block, k_scope);
+
+    uint32_t sw = sync_word_u32();
+    uint32_t freq = gHermesConfig.frequency;
+
+    // Outer: obfuscate packet (Hop)
+    HERMES_Seal_ObfuscateOuter(&block, gHermesConfig.net_key, sw, freq);
+    // Bind Outer MAC to obfuscated block
+    HERMES_Seal_CalculateOuterMAC(&block, gHermesConfig.net_key, sw, freq);
+
+    // Pack into OTA frame
+    if (!HERMES_Frame_Pack(&block, &frame, sw)) {
+        if (gHermesConfig.debug) HERMES_DebugLog("Pack Err");
+        return;
     }
 
     // 4. Transport (ARQ or direct Transmit)
     if (gHermesConfig.ack_mode > 0 && HM_HDR_WantAck(&block.header)) {
-        // Enqueues and ticks ARQ, which will handle CSMA and retries
-        HERMES_ARQ_Send(&block, sync_word_u32());
+        HERMES_ARQ_Send(&block, sw);
+        if (gHermesConfig.debug) HERMES_DebugLog("ARQ Queue");
     } else {
-        HermesFrame_t frame;
-        if (HERMES_Frame_Pack(&block, &frame, sync_word_u32())) {
-            HERMES_CSMA_Transmit(frame.raw, sizeof(frame.raw));
+        if (gHermesConfig.debug) HERMES_DebugLog("CSMA Start");
+        bool csma_ok = HERMES_CSMA_Transmit(frame.raw, sizeof(frame.raw), HM_PRIO_LOW);
+        
+        // For non-ARQ (broadcast/multicast): clear pending immediately after attempt
+        // Need to find the message in the array again because m_ptr might have moved
+        for (int i = 0; i < gHermesMsgCount; i++) {
+            if (memcmp(gHermesMessages[i].packet_id, m.packet_id, HM_PACKET_ID_SIZE) == 0) {
+                gHermesMessages[i].is_pending = false;
+                // Hijack is_read to store CSMA transmission failure for outgoing msgs
+                if (!csma_ok) gHermesMessages[i].is_read = true;
+                break;
+            }
         }
+        gUpdateDisplay = true;
     }
 #endif
+}
+
+void HERMES_DebugLog(const char *text) {
+    if (!gHermesConfig.debug) return;
+
+    // Shift messages if full to act as a circular buffer
+    if (gHermesMsgCount >= HM_MSG_SLOTS) {
+        for (int i = 0; i < HM_MSG_SLOTS - 1; i++) {
+            gHermesMessages[i] = gHermesMessages[i + 1];
+        }
+        gHermesMsgCount = HM_MSG_SLOTS - 1;
+    }
+
+    HermesMessage_t *m = &gHermesMessages[gHermesMsgCount++];
+    memset(m, 0, sizeof(*m));
+    m->is_debug = true;
+    m->is_read = true;
+    m->is_outgoing = false;
+    m->len = HERMES_MSG_PackGSM7(text, strlen(text), m->payload);
+    
+    gHermesHasNewMessage = true;
+    gUpdateDisplay = true;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -573,32 +647,31 @@ void HERMES_HandleFSKInterrupt(uint16_t interrupt_bits) {
     if (interrupt_bits & BK4819_REG_02_FSK_RX_SYNC) {
         rx_write_idx = 0;
         memset(rx_buffer, 0, sizeof(rx_buffer));
-        BK4819_ToggleGpioOut(BK4819_GPIO6_PIN2_GREEN, true); // initial sync flash
+        // Mute speaker during FSK data reception (kamil: AUDIO_AudioPathOff on rx_sync)
+        if (gHermesConfig.fsk_mute)
+            AUDIO_AudioPathOff();
     }
 
     if (interrupt_bits & BK4819_REG_02_FSK_FIFO_ALMOST_FULL) {
+        // Toggle green LED only if unsquelched (receiving actual data)
+        if (gCurrentFunction == FUNCTION_RECEIVE) {
+            BK4819_ToggleGpioOut(BK4819_GPIO6_PIN2_GREEN, true);
+            rx_led_timeout_ms = 100; // blink duration
+        }
         uint16_t rem = HM_FRAME_SIZE - rx_write_idx;
         if (rem > 0)
-            rx_write_idx += HERMES_PHY_ReadFIFO(rx_buffer + rx_write_idx, rem);
-        
-        // toggle LED to indicate active reception transfer
-        static bool rx_led_tog = false;
-        rx_led_tog = !rx_led_tog;
-        BK4819_ToggleGpioOut(BK4819_GPIO6_PIN2_GREEN, rx_led_tog);
+            rx_write_idx += HERMES_PHY_ReadFIFO(rx_buffer + rx_write_idx, HM_FRAME_SIZE, rx_write_idx);
     }
 
     if (interrupt_bits & BK4819_REG_02_FSK_RX_FINISHED) {
         if (rx_write_idx >= HM_FRAME_SIZE) {
-            // Keep solid green if we successfully process it
             ProcessReceivedFrame();
-            BK4819_ToggleGpioOut(BK4819_GPIO6_PIN2_GREEN, true);
-            rx_led_timeout_ms = 200; // 200ms solid success light
-        } else {
-            // Failed/partial, turn off immediately
-            BK4819_ToggleGpioOut(BK4819_GPIO6_PIN2_GREEN, false);
         }
         rx_write_idx = 0;
         HERMES_PHY_StartRx();
+        // Restore speaker after FSK reception complete
+        if (gHermesConfig.fsk_mute)
+            AUDIO_AudioPathOn();
     }
 }
 
@@ -606,8 +679,18 @@ void HERMES_HandleFSKInterrupt(uint16_t interrupt_bits) {
 // Periodic Tick
 // ═══════════════════════════════════════════════════════════
 
+bool gHermesSendTrigger = false;
+
 void HERMES_Tick(void) {
     if (!gHermesEnabled) return;
+
+    if (gHermesSendTrigger) {
+        gHermesSendTrigger = false;
+        // Find the newest pending message and send it
+        if (gHermesMsgCount > 0) {
+            HERMES_SendMessage(&gHermesMessages[gHermesMsgCount - 1]);
+        }
+    }
 
 #ifdef ENABLE_HERMES_ROUTER
     // Process forward queue
