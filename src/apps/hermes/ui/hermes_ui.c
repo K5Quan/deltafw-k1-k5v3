@@ -268,7 +268,7 @@ static void RenderChat(void) {
 
             if (m->is_pending) {
                 // Pending: Clock icon
-                UI_DrawClockIcon(indicator_x + 3, indicator_y + 1);
+                UI_DrawClockIcon(bx - 8, indicator_y);
             } else if (m->is_acked) {
                 // Acked: Double check
                 UI_DrawAckTick(bx - 10, indicator_y);
@@ -299,7 +299,7 @@ static void RenderChat(void) {
                 // We want fill=true if tc is C_CLEAR (negated)
                 UI_PrintStringSmallest(buf, bx + 4, by + 2 + l * 6, false, (tc == C_CLEAR));
             } else {
-                AG_PrintMediumEx(bx + 4, by + 10 + l * 12, POS_L, tc, buf);
+                AG_PrintMediumEx(bx + 4, by + 8 + l * 12, POS_L, tc, buf);
             }
         }
 
