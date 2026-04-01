@@ -129,7 +129,7 @@ void HERMES_Route_Tick(uint32_t now_ms) {
                 
                 HermesFrame_t frame;
                 if (HERMES_Frame_Pack(&fwd_queue[i].block, &frame, fwd_queue[i].sync_word)) {
-                    HERMES_CSMA_Transmit(frame.raw, HM_FRAME_SIZE);
+                    HERMES_CSMA_Transmit(frame.raw, HM_FRAME_SIZE, HM_PRIO_NORMAL);
                 }
             } else {
                 fwd_queue[i].transmit_at -= 10;

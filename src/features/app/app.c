@@ -1792,10 +1792,6 @@ void APP_TimeSlice10ms(void)
     }
 #endif
 
-#ifdef ENABLE_MESH_NETWORK
-    HERMES_Tick();
-#endif
-
     // TextInput Blink Hook
     if (TextInput_Tick()) {
         gUpdateDisplay = true;

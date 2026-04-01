@@ -36,6 +36,10 @@
 #ifdef ENABLE_CW_KEYER
 #include "features/cw/cw.h"
 #endif
+#ifdef ENABLE_MESH_NETWORK
+    #include "apps/hermes/hermes.h"
+    #include "apps/hermes/physical/phy.h"
+#endif
 
 VFO_Info_t    *gTxVfo;
 VFO_Info_t    *gRxVfo;
@@ -975,6 +979,16 @@ void RADIO_SetupRegisters(bool switchToForeground)
 
     //RADIO_SetupAGC(gRxVfo->Modulation == MODULATION_AM, false);
     RADIO_SetupAGC(false, false);
+
+#ifdef ENABLE_MESH_NETWORK
+    if (gHermesEnabled) {
+        HERMES_PHY_StartRx();
+        InterruptMask |= BK4819_REG_3F_FSK_RX_SYNC |
+                         BK4819_REG_3F_FSK_RX_FINISHED |
+                         BK4819_REG_3F_FSK_FIFO_ALMOST_FULL |
+                         BK4819_REG_3F_FSK_TX_FINISHED;
+    }
+#endif
 
     // enable/disable BK4819 selected interrupts
     BK4819_WriteRegister(BK4819_REG_3F, InterruptMask);

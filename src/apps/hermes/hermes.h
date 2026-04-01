@@ -13,16 +13,19 @@ extern bool            gHermesEnabled;
 extern HermesMessage_t gHermesMessages[HM_MSG_SLOTS];
 extern uint8_t         gHermesMsgCount;
 extern bool            gHermesHasNewMessage;
+extern bool            gHermesSendTrigger;
 
 // ──── Core API ────
 void HERMES_Init(void);
 void HERMES_UI_Init(void);
 void HERMES_ProcessKeys(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld);
+void HERMES_UpdateFrequency(void);
 
 // ──── Protocol Processing ────
 void HERMES_HandleFSKInterrupt(uint16_t interrupt_bits);
 void HERMES_Tick(void);  // Called from scheduler for ARQ/routing timers
-void HERMES_SendMessage(const HermesMessage_t *m);
+void HERMES_SendMessage(HermesMessage_t *m);
+void HERMES_DebugLog(const char *text);
 
 #endif // ENABLE_MESH_NETWORK
 #endif

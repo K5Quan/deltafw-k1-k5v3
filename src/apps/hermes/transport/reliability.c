@@ -43,7 +43,7 @@ bool HERMES_ARQ_Send(const HermesDataBlock_t *block, uint32_t sync_word) {
         return false;
     }
 
-    return HERMES_CSMA_Transmit(frame.raw, HM_FRAME_SIZE);
+    return HERMES_CSMA_Transmit(frame.raw, HM_FRAME_SIZE, HM_PRIO_NORMAL);
 }
 
 bool HERMES_ARQ_HandleAck(const uint8_t packet_id[6]) {
@@ -70,13 +70,27 @@ bool HERMES_ARQ_Tick(uint32_t now_ms) {
     arq.retries++;
     if (arq.retries > HM_MAX_RETRIES) {
         arq.active = false;
+
+        extern uint8_t gHermesMsgCount;
+        extern HermesMessage_t gHermesMessages[];
+        extern bool gUpdateDisplay;
+
+        for (uint8_t i = 0; i < gHermesMsgCount; i++) {
+            if (gHermesMessages[i].is_outgoing && gHermesMessages[i].is_pending &&
+                memcmp(gHermesMessages[i].packet_id, arq.packet_id, HM_PACKET_ID_SIZE) == 0) {
+                gHermesMessages[i].is_pending = false;
+                gHermesMessages[i].is_acked = false;
+                gUpdateDisplay = true;
+                break;
+            }
+        }
         return false; // Give up
     }
 
     // Retry
     HermesFrame_t frame;
     if (HERMES_Frame_Pack(&arq.block, &frame, arq.sync_word)) {
-        HERMES_CSMA_Transmit(frame.raw, HM_FRAME_SIZE);
+        HERMES_CSMA_Transmit(frame.raw, HM_FRAME_SIZE, HM_PRIO_CRITICAL);
     }
 
     arq.timeout_at = now_ms + HM_ACK_TIMEOUT_MS;

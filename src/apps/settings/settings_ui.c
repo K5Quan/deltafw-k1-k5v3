@@ -190,7 +190,10 @@ static void Settings_GetValueStr(uint8_t settingId, char *buf, uint8_t bufLen) {
             NUMBER_ToDecimal(buf + strlen(buf), step % 100, 2, true);
             break;
         }
+#ifdef ENABLE_TX_OFFSET
         case MENU_OFFSET: UI_PrintFrequencyEx(buf, gTxVfo->TX_OFFSET_FREQUENCY, true); break;
+#endif
+
         case MENU_SC_REV: {
             const char* modes[] = {"TO", "CO", "SE", "TIME"};
             strcpy(buf, modes[gEeprom.SCAN_RESUME_MODE < 4 ? gEeprom.SCAN_RESUME_MODE : 3]);
@@ -259,7 +262,10 @@ static void Settings_GetValueStr(uint8_t settingId, char *buf, uint8_t bufLen) {
 #endif
         case MENU_BCL: strcpy(buf, gSubMenu_OFF_ON[gTxVfo->BUSY_CHANNEL_LOCK]); break;
         case MENU_TXP: strcpy(buf, gSubMenu_TXP[gTxVfo->OUTPUT_POWER]); break;
+#ifdef ENABLE_TX_OFFSET
         case MENU_SFT_D: strcpy(buf, gSubMenu_SFT_D[gTxVfo->TX_OFFSET_FREQUENCY_DIRECTION]); break;
+#endif
+
         case MENU_W_N: strcpy(buf, gSubMenu_W_N[gTxVfo->CHANNEL_BANDWIDTH]); break;
         case MENU_AM:  strcpy(buf, gModulationStr[gTxVfo->Modulation]); break;
 #ifdef ENABLE_LIVESEEK
@@ -319,7 +325,10 @@ static void Settings_UpdateValue(uint8_t settingId, bool up) {
                 break;
             }
             case MENU_STEP: INC_DEC(gTxVfo->STEP_SETTING, 0, STEP_N_ELEM - 1, up); break;
+#ifdef ENABLE_TX_OFFSET
             case MENU_OFFSET: if (up) gTxVfo->TX_OFFSET_FREQUENCY += 10000; else if (gTxVfo->TX_OFFSET_FREQUENCY >= 10000) gTxVfo->TX_OFFSET_FREQUENCY -= 10000; break;
+#endif
+
             case MENU_SCR: INC_DEC(gTxVfo->SCRAMBLING_TYPE, 0, 10, up); gSetting_ScrambleEnable = (gTxVfo->SCRAMBLING_TYPE > 0); break;
             case MENU_R_DCS: case MENU_T_DCS: {
                 uint8_t *t = (settingId == MENU_R_DCS) ? &gTxVfo->pRX->CodeType : &gTxVfo->pTX->CodeType;
@@ -355,7 +364,10 @@ static void Settings_UpdateValue(uint8_t settingId, bool up) {
 #endif
             case MENU_BCL: gTxVfo->BUSY_CHANNEL_LOCK = !gTxVfo->BUSY_CHANNEL_LOCK; break;
             case MENU_TXP: INC_DEC(gTxVfo->OUTPUT_POWER, 0, 2, up); break;
+#ifdef ENABLE_TX_OFFSET
             case MENU_SFT_D: INC_DEC(gTxVfo->TX_OFFSET_FREQUENCY_DIRECTION, 0, 2, up); break;
+#endif
+
             case MENU_W_N: INC_DEC(gTxVfo->CHANNEL_BANDWIDTH, 0, 1, up); break;
             case MENU_AM: INC_DEC(gTxVfo->Modulation, 0, MODULATION_UKNOWN-1, up); break;
 #ifdef ENABLE_LIVESEEK

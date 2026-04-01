@@ -7,7 +7,7 @@
 
 [project]
 name = "deltafw"
-version = "1.8.1"
+version = "1.8.7"
 authors = ["qshosfw"]
 supported_devices = ["UV-K1", "UV-K5v3"]
 
@@ -46,7 +46,7 @@ options = { EDITION_STRING = "Explorer", SPECTRUM = true, SPECTRUM_WATERFALL = t
 
 [presets.barebones]
 description = "🛡️ Minimal setup for maximum stability and speed"
-options = { EDITION_STRING = "Barebones", SPECTRUM = false, FMRADIO = false, NOAA = false, SERIAL_SCREENCAST = false, CRYPTO = false, PASSCODE = false, CUSTOM_ROGER = false, APP_BREAKOUT_GAME = false, VOX = false, TX_SOFT_START = false, TX_AUDIO_COMPRESSOR = false, CTCSS_LEAD_IN = false, SIGNAL_CLASSIFIER = false, SMART_SQUELCH = false, SQUELCH_TAIL_ELIMINATION = false }
+options = { EDITION_STRING = "Barebones", SPECTRUM = false, FMRADIO = false, NOAA = false, SERIAL_SCREENCAST = false, CRYPTO = false, PASSCODE = false, CUSTOM_ROGER = false, APP_BREAKOUT_GAME = false, VOX = false, TX_SOFT_START = false, TX_AUDIO_COMPRESSOR = false, CTCSS_LEAD_IN = false, SIGNAL_CLASSIFIER = false, SMART_SQUELCH = false, SQUELCH_TAIL_ELIMINATION = false, TX_OFFSET = false }
 
 # =============================================================================
 # ⚙️  Default Configuration (Base Options)
@@ -116,18 +116,18 @@ SCRAMBLER = true
 ON_DEVICE_PROGRAMMING = true # Channel Edit (Save, Delete, Rename)
 SCAN_LIST_EDITING = true     # Scan List Membership Edit
 TX_OFFSET = true             # ⚡ Vuurwerk TX / RX Features
-TX_SOFT_START = true
-TX_AUDIO_COMPRESSOR = true
-CTCSS_LEAD_IN = true
-SIGNAL_CLASSIFIER = true
-SMART_SQUELCH = true
-SQUELCH_TAIL_ELIMINATION = true
-SCAN_WATCH = true
-INTELLIGENT_DUAL_WATCH = true
+TX_SOFT_START = false
+TX_AUDIO_COMPRESSOR = false
+CTCSS_LEAD_IN = false
+SIGNAL_CLASSIFIER = false
+SMART_SQUELCH = false
+SQUELCH_TAIL_ELIMINATION = false
+SCAN_WATCH = false
+INTELLIGENT_DUAL_WATCH = false
 
 # 🌍  Misc Settings
 EXTRA_ROGER = true
-CUSTOM_ROGER = true
+CUSTOM_ROGER = false
 
 # 🧩 Apps & Features
 
@@ -175,4 +175,4 @@ CRYPTO = true
 STORAGE_ENCRYPTION = false ## Highly experimental, unreliable, CAN CORRUPT VFOS & SETTINGS!
 PASSCODE = true
 TRNG_SENSORS = true
-EEPROM_HEXDUMP = true
+EEPROM_HEXDUMP = false

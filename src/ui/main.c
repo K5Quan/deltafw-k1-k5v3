@@ -845,11 +845,14 @@ void UI_DisplayMain(void)
         if (vfoInfo->FrequencyReverse) labels[nLabels++] = "R";
 
         // 8. Offset Direction
+#ifdef ENABLE_TX_OFFSET
         const char *dir_list[] = {"", "+", "-"};
         if (vfoInfo->freq_config_RX.Frequency != vfoInfo->freq_config_TX.Frequency) {
             if (vfoInfo->TX_OFFSET_FREQUENCY_DIRECTION < 3 && vfoInfo->TX_OFFSET_FREQUENCY_DIRECTION > 0)
                 labels[nLabels++] = dir_list[vfoInfo->TX_OFFSET_FREQUENCY_DIRECTION];
         }
+#endif
+
 
         // 9. Bandwidth
         const char *bwNames[] = {"25k", "12.5k", "8.33k", "6.25k"};

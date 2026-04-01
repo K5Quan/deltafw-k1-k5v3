@@ -597,20 +597,17 @@ void HERMES_SendMessage(HermesMessage_t *m_ptr) {
         if (gHermesConfig.debug) HERMES_DebugLog("ARQ Queue");
     } else {
         if (gHermesConfig.debug) HERMES_DebugLog("CSMA Start");
-        bool csma_ok = HERMES_CSMA_Transmit(frame.raw, sizeof(frame.raw), HM_PRIO_LOW);
-        
-        // For non-ARQ (broadcast/multicast): clear pending immediately after attempt
-        // Need to find the message in the array again because m_ptr might have moved
-        for (int i = 0; i < gHermesMsgCount; i++) {
-            if (memcmp(gHermesMessages[i].packet_id, m.packet_id, HM_PACKET_ID_SIZE) == 0) {
-                gHermesMessages[i].is_pending = false;
-                // Hijack is_read to store CSMA transmission failure for outgoing msgs
-                if (!csma_ok) gHermesMessages[i].is_read = true;
-                break;
-            }
+        HERMES_CSMA_Transmit(frame.raw, sizeof(frame.raw), HM_PRIO_LOW);
+    // For non-ARQ (broadcast): always clear pending after attempt. 
+    // Need to find the message in the array again because m_ptr might have moved!
+    for (int i = 0; i < gHermesMsgCount; i++) {
+        if (memcmp(gHermesMessages[i].packet_id, m.packet_id, HM_PACKET_ID_SIZE) == 0) {
+            gHermesMessages[i].is_pending = false;
+            break;
         }
-        gUpdateDisplay = true;
     }
+    gUpdateDisplay = true;
+}
 #endif
 }
 

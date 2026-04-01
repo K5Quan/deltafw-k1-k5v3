@@ -42,6 +42,11 @@
 #include "features/cw/cw.h"
 #endif
 
+#ifdef ENABLE_MESH_NETWORK
+#include "apps/hermes/hermes.h"
+#include "apps/hermes/physical/phy.h"
+#endif
+
 #ifdef ENABLE_TX_SOFT_START
 #include "features/tx/tx_soft_start.h"
 #endif
@@ -176,6 +181,12 @@ void FUNCTION_PowerSave() {
 
 void FUNCTION_Transmit()
 {
+#ifdef ENABLE_MESH_NETWORK
+    if (gHermesEnabled) {
+        HERMES_PHY_StopRx();
+    }
+#endif
+
     // if DTMF is enabled when TX'ing, it changes the TX audio filtering !! .. 1of11
     BK4819_DisableDTMF();
 

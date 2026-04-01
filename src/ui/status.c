@@ -214,6 +214,15 @@ void UI_DisplayStatus() {
         x_off += 10;
     }
 
+#ifdef ENABLE_MESH_NETWORK
+    extern bool gHermesHasNewMessage;
+    if (gHermesHasNewMessage) {
+        // Draw a tiny envelope or just the text "MSG"
+        UI_PrintStringSmallest("MSG", x_off, 0, true, true);
+        x_off += 14;
+    }
+#endif
+
 draw_battery:
     // 5. Draw Battery
     if (show_icon) {

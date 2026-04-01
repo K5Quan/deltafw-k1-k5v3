@@ -104,9 +104,7 @@ static uint8_t BubbleHeight(int16_t i) {
     uint8_t lines = CountLines(text, len, tiny);
     uint8_t h = tiny ? (lines * 6 + 3) : (lines * 12 - 1);
     if (!IsSameSender(i, i + 1)) h += 2; else h -= 1;
-    if (!IsSameSender(i, i - 1)) {
-        if (!m->is_outgoing || m->addressing != HM_ADDR_BROADCAST) h += 8;
-    }
+    if (!m->is_outgoing && !IsSameSender(i, i - 1)) h += 8;
     return h < 1 ? 1 : h;
 }
 
@@ -268,12 +266,12 @@ static void RenderChat(void) {
 
             if (m->is_pending) {
                 // Pending: Clock icon
-                UI_DrawClockIcon(bx - 8, indicator_y);
+                UI_DrawClockIcon(indicator_x + 3, indicator_y + 1);
             } else if (m->is_acked) {
                 // Acked: Double check
                 UI_DrawAckTick(bx - 10, indicator_y);
-            } else if ((m->addressing != HM_ADDR_BROADCAST && gHermesConfig.ack_mode > 0) || (m->addressing == HM_ADDR_BROADCAST && m->is_read)) {
-                // Failed (was expecting ACK but didn't get it and max retries reached, OR CSMA channel was busy for broadcast)
+            } else if (m->addressing != HM_ADDR_BROADCAST && gHermesConfig.ack_mode > 0) {
+                // Failed (was expecting ACK but didn't get it and max retries reached)
                 UI_PrintStringSmallest("X", indicator_x + 7, indicator_y, false, true);
             } else {
                 // Sent

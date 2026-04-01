@@ -493,7 +493,9 @@ static void MAIN_Key_DIGITS(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 //      #ifdef ENABLE_NOAA
 //          if (!IS_NOAA_CHANNEL(gTxVfo->CHANNEL_SAVE))
 //      #endif
+        const uint8_t Vfo = gEeprom.TX_VFO;
         if (IS_FREQ_CHANNEL(gTxVfo->CHANNEL_SAVE))
+
         {   // user is entering a frequency
 
 #ifdef ENABLE_VOICE
@@ -525,7 +527,6 @@ static void MAIN_Key_DIGITS(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
                 Frequency = frequencyBandTable[BAND_N_ELEM - 1].upper;
             }
 
-            const uint8_t Vfo = gEeprom.TX_VFO;
             const FREQUENCY_Band_t band = FREQUENCY_GetBand(Frequency);
 
             if (gTxVfo->Band != band) {

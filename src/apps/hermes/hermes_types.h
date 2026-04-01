@@ -44,7 +44,7 @@
 
 // ──── Application Constants (RFC §12) ────
 #define HM_MSG_MAX_TEXT        64   // GSM-7 chars in 56 bytes
-#define HM_MSG_SLOTS            8   // Stored message ring
+#define HM_MSG_SLOTS           12   // Stored message ring (Increased via RAM optimization)
 
 // ──── Packet Types (RFC §12.2) ────
 typedef enum {
@@ -114,19 +114,18 @@ typedef struct __attribute__((packed)) {
 
 // ──── Stored Message (for UI display) ────
 typedef struct {
-    uint8_t  src[HM_NODE_ID_SIZE];
-    uint8_t  dest[HM_NODE_ID_SIZE];
+    uint8_t  addr[HM_NODE_ID_SIZE];      // incoming: src, outgoing: dest
     uint8_t  packet_id[HM_PACKET_ID_SIZE];
-    char     text[HM_MSG_MAX_TEXT + 1];
-    uint8_t  len;
-    uint8_t  addressing : 2;
+    uint8_t  payload[HM_PAYLOAD_SIZE];   // Packed GSM-7 octets
+    uint8_t  len         : 7;            // Character count (0-64)
+    uint8_t  addressing  : 2;            // HermesAddrMode_t
     bool     is_outgoing : 1;
     bool     is_pending  : 1;
     bool     is_acked    : 1;
     bool     is_read     : 1;
-    uint8_t  tx_state    : 3;
-    uint8_t  retry_count : 3;
-} HermesMessage_t;
+    bool     is_debug    : 1;            // Replaces "$debug" string check
+    uint8_t  reserved    : 2;
+} HermesMessage_t;                       // ~71 bytes (Saved 15 bytes per slot)
 
 // ──── Contact Entry (persisted) ────
 #define HM_CONTACT_FLAG_MULTICAST  0x01
@@ -164,9 +163,9 @@ typedef struct {
     bool     relay_enabled;
     uint8_t  ack_mode;       // 0=Off, 1=Manual, 2=Auto
     uint8_t  mac_policy;     // 0=HW, 1=Custom, 2=Alias
-    bool     crypto_enabled;
     bool     enabled;
     bool     debug;
+    bool     fsk_mute;       // Mute FSK audio on speaker during RX/TX
 } HermesConfig_t;
 
 // ──── Broadcast address ────

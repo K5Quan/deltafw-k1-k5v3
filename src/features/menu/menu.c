@@ -1130,6 +1130,7 @@ void MENU_ShowCurrentSetting(void)
             gSubMenuSelection = (gTxVfo->freq_config_TX.CodeType == CODE_TYPE_CONTINUOUS_TONE) ? gTxVfo->freq_config_TX.Code + 1 : 0;
             break;
 
+#ifdef ENABLE_TX_OFFSET
         case MENU_SFT_D:
             gSubMenuSelection = gTxVfo->TX_OFFSET_FREQUENCY_DIRECTION;
             break;
@@ -1137,6 +1138,8 @@ void MENU_ShowCurrentSetting(void)
         case MENU_OFFSET:
             gSubMenuSelection = gTxVfo->TX_OFFSET_FREQUENCY;
             break;
+#endif
+
 
         case MENU_W_N:
             gSubMenuSelection = gTxVfo->CHANNEL_BANDWIDTH;
@@ -1577,6 +1580,7 @@ static void MENU_Key_0_to_9(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
         return;
     }
 
+#ifdef ENABLE_TX_OFFSET
     if (UI_MENU_GetCurrentMenuId() == MENU_OFFSET)
     {
         uint32_t Frequency;
@@ -1599,6 +1603,8 @@ static void MENU_Key_0_to_9(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
         gInputBoxIndex = 0;
         return;
     }
+#endif
+
 
     if (UI_MENU_GetCurrentMenuId() == MENU_MEM_CH ||
         UI_MENU_GetCurrentMenuId() == MENU_DEL_CH ||
@@ -1687,7 +1693,12 @@ static void MENU_Key_EXIT(bool bKeyPressed, bool bKeyHeld)
 
         if (gIsInSubMenu)
         {
+#ifdef ENABLE_TX_OFFSET
             if (gInputBoxIndex == 0 || UI_MENU_GetCurrentMenuId() != MENU_OFFSET)
+#else
+            if (gInputBoxIndex == 0)
+#endif
+
             {
                 gAskForConfirmation = 0;
                 gIsInSubMenu        = false;
@@ -1982,6 +1993,7 @@ static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
         return;
     }
 
+#ifdef ENABLE_TX_OFFSET
     if (UI_MENU_GetCurrentMenuId() == MENU_OFFSET)
     {
         int32_t Offset = (Direction * gTxVfo->StepFrequency) + gSubMenuSelection;
@@ -1997,6 +2009,8 @@ static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
         gRequestDisplayScreen = DISPLAY_MENU;
         return;
     }
+#endif
+
 
     VFO = 0;
 

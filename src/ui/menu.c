@@ -235,13 +235,14 @@ const char gSubMenu_TXP[][6] =
 };
 
 #ifdef ENABLE_TX_OFFSET
-const char gSubMenu_SFT_D[][4] =
+const char gSubMenu_SFT_D[3][4] =
 {
     "OFF",
     "+",
     "-"
 };
 #endif
+
 
 const char gSubMenu_W_N[][7] =
 {
@@ -701,9 +702,6 @@ void UI_DisplayMenu(void)
 
     switch (UI_MENU_GetCurrentMenuId())
     {
-        case MENU_SQL:
-             // Moved to grouped block
-            break;
 
         case MENU_LIVESEEK:
             strcpy(String, gSubMenu_LiveSeek[gSubMenuSelection]);
@@ -791,9 +789,12 @@ void UI_DisplayMenu(void)
             break;
         }
 
+#ifdef ENABLE_TX_OFFSET
         case MENU_SFT_D:
             strcpy(String, gSubMenu_SFT_D[gSubMenuSelection]);
             break;
+#endif
+
 
         case MENU_OFFSET:
             if (!gIsInSubMenu || gInputBoxIndex == 0)
@@ -869,11 +870,6 @@ void UI_DisplayMenu(void)
             // Obsolete ???
             //if(BACKLIGHT_GetBrightness() < 4)
             //    BACKLIGHT_SetBrightness(4);
-            break;
-
-        case MENU_ABR_MIN:
-        case MENU_ABR_MAX:
-             // Moved to grouped block
             break;
 
         case MENU_AM:
@@ -1130,20 +1126,21 @@ void UI_DisplayMenu(void)
             break;
 
         case MENU_D_HOLD:
+            NUMBER_ToDecimal(String, gSubMenuSelection, 2, false);
+            strcat(String, "s");
+            break;
+#endif
+
         case MENU_ABR_MIN:
         case MENU_ABR_MAX:
         case MENU_SQL:
             NUMBER_ToDecimal(String, gSubMenuSelection, 2, false);
-            if(UI_MENU_GetCurrentMenuId() == MENU_D_HOLD)
-            {
-                strcat(String, "s");
-            }
-            else if((UI_MENU_GetCurrentMenuId() == MENU_ABR_MIN || UI_MENU_GetCurrentMenuId() == MENU_ABR_MAX) && gIsInSubMenu)
+            if((UI_MENU_GetCurrentMenuId() == MENU_ABR_MIN || UI_MENU_GetCurrentMenuId() == MENU_ABR_MAX) && gIsInSubMenu)
             {
                 BACKLIGHT_SetBrightness(gSubMenuSelection);
             }
             break;
-#endif
+
         case MENU_D_PRE:
             NUMBER_ToDecimal(String, gSubMenuSelection, 3, false);
             strcat(String, "*10ms");

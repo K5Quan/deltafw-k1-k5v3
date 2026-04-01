@@ -11,18 +11,23 @@
 #include "apps/hermes/hermes_types.h"
 #include "drivers/bsp/system.h"
 #include "drivers/bsp/bk4819.h"
+#include "features/radio/functions.h"
 #include "helper/trng.h"
 
 // Cortex-M SysTick register (24-bit down-counter)
 #include "py32f0xx.h"
 
-#define CSMA_CCA_THRESHOLD  (-100) // dBm
-#define CSMA_MAX_ATTEMPTS     5
+#define CSMA_CCA_THRESHOLD  (-110) // dBm per Hermes RFC
+#define CSMA_MAX_ATTEMPTS      6    // Attempt 0-5
 #define CSMA_TICKS_PER_MS    48000 // 48MHz sysclk
 
+#define CW_BASE_MIN    50    // ms
+#define CW_BASE_MAX    200   // ms
+#define CW_CLAMP_MIN   1000  // ms
+#define CW_CLAMP_MAX   5000  // ms
+#define JITTER_MAX     100   // ms
+
 // ──── Non-blocking millisecond delay ────
-// Polls SysTick->VAL (24-bit downcounter) to measure elapsed time
-// without blocking interrupts or the main loop.
 static void hermes_yield_ms(uint16_t ms) {
     uint32_t target = (uint32_t)ms * CSMA_TICKS_PER_MS;
     uint32_t elapsed = 0;
@@ -38,57 +43,79 @@ static void hermes_yield_ms(uint16_t ms) {
     }
 }
 
-bool HERMES_CSMA_IsChannelClear(void) {
-    return (HERMES_PHY_GetRSSI() < CSMA_CCA_THRESHOLD);
+// ──── CCA Window Sampling ────
+// Requires 5 consecutive clear samples at 1ms intervals
+static bool hermes_wait_for_clear(uint32_t max_wait_ms, uint32_t *ms_counter) {
+    uint8_t clear_count = 0;
+    for (uint32_t i = 0; i < max_wait_ms; i++) {
+        hermes_yield_ms(1);
+        (*ms_counter)++;
+        
+        // Blink LED while waiting (4Hz = 125ms phase)
+        BK4819_ToggleGpioOut(BK4819_GPIO5_PIN1_RED, ((*ms_counter) / 125) % 2);
+
+        if (HERMES_CSMA_IsChannelClear()) {
+            clear_count++;
+            if (clear_count >= 5) return true;
+        } else {
+            clear_count = 0;
+        }
+    }
+    return false;
 }
 
-bool HERMES_CSMA_Transmit(const uint8_t *frame, uint16_t len) {
+bool HERMES_CSMA_IsChannelClear(void) {
+    // Use same busy-channel detection as the firmware's BUSY_CHANNEL_LOCK.
+    // When the BK4819's hardware squelch opens (calibrated RSSI + noise + glitch
+    // thresholds from EEPROM), gCurrentFunction transitions to FUNCTION_RECEIVE.
+    // This is the exact check at radio.c RADIO_PrepareTX() line 1314.
+    return (gCurrentFunction != FUNCTION_RECEIVE);
+}
+
+bool HERMES_CSMA_Transmit(const uint8_t *frame, uint16_t len, Hermes_Priority_t priority) {
     if (!frame || len == 0) return false;
 
-    uint16_t backoff = HM_BACKOFF_MIN_MS;
     uint32_t ms_elapsed = 0;
 
     for (uint8_t attempt = 0; attempt < CSMA_MAX_ATTEMPTS; attempt++) {
-        // CCA window: sample RSSI for 5ms
-        bool clear = true;
-        for (uint8_t t = 0; t < 5; t++) {
-            hermes_yield_ms(1);
-            ms_elapsed++;
-            BK4819_ToggleGpioOut(BK4819_GPIO5_PIN1_RED, (ms_elapsed / 50) % 2);
-
-            if (!HERMES_CSMA_IsChannelClear()) { clear = false; break; }
+        // 1. Initial CCA
+        if (hermes_wait_for_clear(50, &ms_elapsed)) {
+            BK4819_ToggleGpioOut(BK4819_GPIO5_PIN1_RED, true);
+            bool ok = HERMES_PHY_Transmit(frame, len);
+            BK4819_ToggleGpioOut(BK4819_GPIO5_PIN1_RED, false);
+            HERMES_PHY_StartRx();
+            return ok;
         }
 
-        if (clear) {
-            // DIFS
-            for (uint8_t t = 0; t < HM_DIFS_MS; t++) {
-                hermes_yield_ms(1);
-                ms_elapsed++;
-                BK4819_ToggleGpioOut(BK4819_GPIO5_PIN1_RED, (ms_elapsed / 50) % 2);
-            }
+        // 2. Channel busy - calculate backoff
+        uint32_t cw_min = CW_BASE_MIN << attempt;
+        uint32_t cw_max = CW_BASE_MAX << attempt;
 
-            if (HERMES_CSMA_IsChannelClear()) {
-                BK4819_ToggleGpioOut(BK4819_GPIO5_PIN1_RED, false); // Turn off blink before solid TX starts
-                HERMES_PHY_SaveRadioState();
+        // Apply priority divisors/multipliers
+        if (priority == HM_PRIO_CRITICAL) { cw_min /= 4; cw_max /= 4; }
+        else if (priority == HM_PRIO_LOW) { cw_min *= 2; cw_max *= 2; }
+
+        if (cw_min > CW_CLAMP_MIN) cw_min = CW_CLAMP_MIN;
+        if (cw_max > CW_CLAMP_MAX) cw_max = CW_CLAMP_MAX;
+
+        uint32_t backoff = cw_min + (TRNG_GetU32() % (cw_max - cw_min + 1));
+        uint32_t jitter = TRNG_GetU32() % (JITTER_MAX + 1);
+        uint32_t total_wait = backoff + jitter;
+
+        // 3. Backoff wait with early-exit
+        BK4819_ToggleGpioOut(BK4819_GPIO5_PIN1_RED, false);
+        uint32_t waited = 0;
+        while (waited < total_wait) {
+            // Check every 10ms for early exit
+            if (hermes_wait_for_clear(10, &ms_elapsed)) {
+                BK4819_ToggleGpioOut(BK4819_GPIO5_PIN1_RED, true);
                 bool ok = HERMES_PHY_Transmit(frame, len);
-                HERMES_PHY_RestoreRadioState();
+                BK4819_ToggleGpioOut(BK4819_GPIO5_PIN1_RED, false);
                 HERMES_PHY_StartRx();
                 return ok;
             }
+            waited += 10;
         }
-
-        // Exponential backoff with jitter via TRNG
-        uint8_t jitter = (uint8_t)(TRNG_GetU32()) & 0x1F;
-        uint16_t wait_ms = backoff + jitter;
-
-        for (uint16_t t = 0; t < wait_ms; t++) {
-            hermes_yield_ms(1);
-            ms_elapsed++;
-            BK4819_ToggleGpioOut(BK4819_GPIO5_PIN1_RED, (ms_elapsed / 50) % 2);
-        }
-
-        backoff *= 2;
-        if (backoff > HM_BACKOFF_MAX_MS) backoff = HM_BACKOFF_MAX_MS;
     }
 
     BK4819_ToggleGpioOut(BK4819_GPIO5_PIN1_RED, false);

@@ -335,22 +335,24 @@ typedef union {
         uint16_t Magic;           // 0x484D "HM"
         uint8_t  MacPolicy;       // 0=Hardware, 1=Custom, 2=Alias
         uint8_t  CustomMac[6];    // If policy=1
-        char     Alias[13];       // Max 12 chars + null (if policy=2 or discovery alias)
+        char     Alias[13];       // Max 12 chars + null
         char     Passcode[32];    // Human-readable passcode for K_net
-        uint8_t  Salt[16];        // 128-bit Network Salt (RFC §2.1.2)
-        bool     HasPasscode;     // 1 if custom passcode/salt, 0 if default
+        uint8_t  Salt[16];        // 128-bit Network Salt
+        uint8_t  HasPasscode;     // 1 if custom, 0 default
         
         // Granular options
-        uint8_t  FreqMode;        // 0=LPD66(433.00), 1=CurrentVFO, 2=MemChannel(Idx in FreqCh)
-        uint8_t  FreqCh;          // Memory channel index (0-199) if FreqMode==2
-        bool     Enabled;
-        bool     RelayEnabled;    // 1=Active Relay, 0=Off
+        uint8_t  FreqMode;        // 0=LPD66, 1=CurrentVFO, 2=MemChannel
+        uint8_t  FreqCh;          // Memory channel index (0-199)
+        uint8_t  Enabled;
+        uint8_t  RelayEnabled;    // 1=Active Relay, 0=Off
         uint8_t  AckMode;         // 0=Off, 1=Manual, 2=Auto
-        bool     CryptoEnabled;
         uint8_t  TTL;             // Default TTL (e.g. 5)
         uint8_t  TxPower;         // 0=Low, 1=Mid, 2=High
         
-        uint8_t  Reserved[40];    // (128 - 2 - 1 - 6 - 13 - 32 - 16 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 = 40)
+        uint8_t  Debug;           // 1=Show bubbles, 0=Off
+        uint8_t  FskMute;         // 1=Mute FSK audio on speaker, 0=Hear FSK
+        
+        uint8_t  Reserved[48];    // 128 - 80 used bytes = 48
     } fields;
     uint8_t raw[128];
 } __attribute__((packed)) HermesSettings_t;
